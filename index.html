@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Prayer Project</title>
+  <meta name="description" content="The Prayer Project is a peaceful anonymous prayer wall where people can submit prayer requests and pray for others." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07111f;
+      --bg-soft: #0d1b2f;
+      --card: rgba(255, 255, 255, 0.09);
+      --card-strong: rgba(255, 255, 255, 0.14);
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --soft: #94a3b8;
+      --gold: #e7c873;
+      --gold-strong: #f4d57f;
+      --blue: #8ab4f8;
+      --danger: #fecaca;
+      --success: #bbf7d0;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
+      --radius: 26px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(231, 200, 115, 0.18), transparent 34rem),
+        radial-gradient(circle at top right, rgba(138, 180, 248, 0.18), transparent 32rem),
+        linear-gradient(135deg, #06101f 0%, #0b1730 45%, #050914 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle, rgba(255,255,255,.22) 1px, transparent 1px),
+        radial-gradient(circle, rgba(231,200,115,.18) 1px, transparent 1px);
+      background-size: 70px 70px, 120px 120px;
+      background-position: 0 0, 30px 40px;
+      opacity: .18;
+      mask-image: linear-gradient(to bottom, black, transparent 78%);
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .shell { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(7, 17, 31, 0.72);
+      border-bottom: 1px solid rgba(255,255,255,.09);
+    }
+
+    .nav-inner {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, rgba(231,200,115,.95), rgba(255,255,255,.78));
+      color: #07111f;
+      box-shadow: 0 0 32px rgba(231,200,115,.24);
+      font-size: 22px;
+    }
+
+    .brand-title { line-height: 1.05; }
+    .brand-title span { display: block; font-size: 12px; color: var(--soft); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; margin-top: 4px; }
+
+    .nav-links { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .nav-links a { color: var(--muted); font-weight: 700; font-size: 14px; padding: 10px 12px; border-radius: 999px; }
+    .nav-links a:hover { color: var(--text); background: rgba(255,255,255,.08); }
+
+    .hero { padding: 90px 0 54px; }
+
+    .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 34px; align-items: center; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 13px;
+      border: 1px solid rgba(231,200,115,.35);
+      background: rgba(231,200,115,.1);
+      border-radius: 999px;
+      color: #ffe7a8;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-family: "Playfair Display", serif;
+      font-size: clamp(44px, 8vw, 86px);
+      line-height: .98;
+      margin: 24px 0 22px;
+      letter-spacing: -.04em;
+    }
+
+    .hero p { color: var(--muted); font-size: 18px; line-height: 1.8; max-width: 680px; }
+
+    .verse {
+      margin-top: 24px;
+      padding: 22px;
+      border-left: 3px solid var(--gold);
+      background: rgba(255,255,255,.07);
+      border-radius: 18px;
+      color: #f8fafc;
+      max-width: 650px;
+      box-shadow: 0 20px 70px rgba(0,0,0,.2);
+    }
+    .verse small { display: block; color: var(--gold); margin-top: 10px; font-weight: 800; }
+
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 28px; }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 13px 18px;
+      font-weight: 800;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary { color: #07111f; background: linear-gradient(135deg, var(--gold-strong), #fff2bd); box-shadow: 0 16px 38px rgba(231,200,115,.22); }
+    .btn-secondary { color: var(--text); background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.12); }
+    .btn-block { width: 100%; }
+
+    .panel {
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+
+    .submit-card { padding: 28px; }
+    .submit-card h2, .section-title h2 { font-family: "Playfair Display", serif; font-size: 34px; margin: 0 0 10px; letter-spacing: -.02em; }
+    .submit-card p, .section-title p { color: var(--muted); line-height: 1.7; margin: 0; }
+
+    form { margin-top: 22px; display: grid; gap: 14px; }
+    label { display: grid; gap: 8px; color: var(--muted); font-size: 13px; font-weight: 800; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(3, 7, 18, .46);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 13px 14px;
+      font: inherit;
+      outline: none;
+    }
+    textarea { min-height: 132px; resize: vertical; }
+    input:focus, textarea:focus, select:focus { border-color: rgba(231,200,115,.65); box-shadow: 0 0 0 4px rgba(231,200,115,.09); }
+    .hint { color: var(--soft); font-size: 12px; line-height: 1.5; }
+
+    .notice {
+      display: none;
+      margin-top: 14px;
+      padding: 13px 14px;
+      border-radius: 16px;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+    .notice.show { display: block; }
+    .notice.success { background: rgba(34,197,94,.12); border: 1px solid rgba(187,247,208,.28); color: var(--success); }
+    .notice.error { background: rgba(239,68,68,.12); border: 1px solid rgba(254,202,202,.28); color: var(--danger); }
+
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 26px; }
+    .stat { padding: 18px; border-radius: 20px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1); }
+    .stat strong { display: block; font-size: 28px; color: var(--gold); }
+    .stat span { color: var(--soft); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+
+    section { padding: 58px 0; }
+    .section-title { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 24px; }
+    .section-title p { max-width: 620px; }
+
+    .toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .toolbar input, .toolbar select { max-width: 260px; }
+
+    .prayer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+
+    .prayer-card {
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.085);
+      border: 1px solid rgba(255,255,255,.11);
+      box-shadow: 0 18px 60px rgba(0,0,0,.18);
+      min-height: 270px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .tag-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .tag { padding: 7px 10px; border-radius: 999px; background: rgba(231,200,115,.12); color: #ffe7a8; font-weight: 800; font-size: 12px; }
+    .tag.urgent { background: rgba(239,68,68,.14); color: #fecaca; }
+    .prayer-card h3 { margin: 0; font-size: 20px; line-height: 1.25; }
+    .prayer-card p { margin: 0; color: var(--muted); line-height: 1.65; }
+    .card-footer { margin-top: auto; display: grid; gap: 12px; }
+    .meta { color: var(--soft); font-size: 12px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 44px;
+      border: 1px dashed rgba(255,255,255,.2);
+      border-radius: 24px;
+      color: var(--muted);
+      background: rgba(255,255,255,.05);
+    }
+
+    .about-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .about-card { padding: 24px; border-radius: 24px; background: rgba(255,255,255,.075); border: 1px solid rgba(255,255,255,.1); }
+    .about-card h3 { margin: 0 0 10px; }
+    .about-card p { color: var(--muted); line-height: 1.7; margin: 0; }
+
+    footer { padding: 32px 0 48px; color: var(--soft); text-align: center; }
+
+    @media (max-width: 920px) {
+      .hero-grid, .prayer-grid, .about-grid { grid-template-columns: 1fr; }
+      .hero { padding-top: 58px; }
+      .section-title { display: block; }
+      .stats { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .nav-inner { align-items: flex-start; flex-direction: column; padding: 16px 0; }
+      .nav-links { justify-content: flex-start; }
+      h1 { font-size: 46px; }
+      .submit-card { padding: 22px; }
+      .toolbar input, .toolbar select { max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="shell nav-inner">
+      <a class="brand" href="#top" aria-label="The Prayer Project home">
+        <div class="brand-mark">✦</div>
+        <div class="brand-title">The Prayer Project<span>Anonymous Prayer Wall</span></div>
+      </a>
+      <div class="nav-links">
+        <a href="#submit">Submit</a>
+        <a href="#wall">Prayer Wall</a>
+        <a href="#about">About</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="top">
+    <header class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <div class="eyebrow">A quiet place to be carried in prayer</div>
+          <h1>You do not have to carry it alone.</h1>
+          <p>
+            The Prayer Project is a peaceful space where people can anonymously share what is heavy on their heart, and others can pause, pray, and remind them that someone cared enough to lift their name before God.
+          </p>
+          <div class="verse">
+            “Come to Me, all who are weary and burdened, and I will give you rest.”
+            <small>Matthew 11:28</small>
+          </div>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#submit">Submit a Prayer Request</a>
+            <a class="btn btn-secondary" href="#wall">Pray With Others</a>
+          </div>
+          <div class="stats" aria-label="Prayer Project statistics">
+            <div class="stat"><strong id="totalRequests">0</strong><span>Requests</span></div>
+            <div class="stat"><strong id="totalPrayers">0</strong><span>Prayers Given</span></div>
+            <div class="stat"><strong id="urgentRequests">0</strong><span>Urgent</span></div>
+          </div>
+        </div>
+
+        <aside class="panel submit-card" id="submit">
+          <h2>Submit a Prayer</h2>
+          <p>Your request can stay anonymous. Your email is only used so we can let you know when someone prays for you.</p>
+
+          <form id="prayerForm">
+            <label>
+              Prayer Title
+              <input id="title" maxlength="90" required placeholder="Example: Please pray for my family" />
+            </label>
+
+            <label>
+              Category
+              <select id="category" required>
+                <option value="">Choose a category</option>
+                <option>Health</option>
+                <option>Family</option>
+                <option>Faith</option>
+                <option>Anxiety</option>
+                <option>School</option>
+                <option>Grief</option>
+                <option>Relationships</option>
+                <option>Financial</option>
+                <option>Other</option>
+              </select>
+            </label>
+
+            <label>
+              Prayer Request
+              <textarea id="message" maxlength="700" required placeholder="Share only what you are comfortable sharing. Names and personal details are optional."></textarea>
+            </label>
+
+            <label>
+              Email for Prayer Notifications
+              <input id="email" type="email" required placeholder="you@example.com" />
+              <span class="hint">Your email is not displayed on the prayer wall.</span>
+            </label>
+
+            <label>
+              Urgency
+              <select id="urgent">
+                <option value="false">Normal Prayer Request</option>
+                <option value="true">Urgent Prayer Request</option>
+              </select>
+            </label>
+
+            <button class="btn btn-primary btn-block" type="submit" id="submitBtn">Post Prayer Request</button>
+            <div id="formNotice" class="notice"></div>
+          </form>
+        </aside>
+      </div>
+    </header>
+
+    <section id="wall">
+      <div class="shell">
+        <div class="section-title">
+          <div>
+            <h2>Prayer Wall</h2>
+            <p>Read through the requests below. When you click “Pray For,” the person who submitted it will receive a gentle email letting them know someone prayed.</p>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <input id="searchInput" placeholder="Search prayer requests..." />
+          <select id="categoryFilter">
+            <option value="all">All Categories</option>
+            <option>Health</option>
+            <option>Family</option>
+            <option>Faith</option>
+            <option>Anxiety</option>
+            <option>School</option>
+            <option>Grief</option>
+            <option>Relationships</option>
+            <option>Financial</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="prayer-grid" id="prayerGrid">
+          <div class="empty">Loading the prayer wall...</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="about">
+      <div class="shell">
+        <div class="section-title">
+          <div>
+            <h2>How It Works</h2>
+            <p>The goal is simple: make it easier for people to ask for prayer and easier for others to respond with compassion.</p>
+          </div>
+        </div>
+
+        <div class="about-grid">
+          <div class="about-card">
+            <h3>1. Submit</h3>
+            <p>Someone shares a prayer request with a title, category, message, and private email for notifications.</p>
+          </div>
+          <div class="about-card">
+            <h3>2. Pray</h3>
+            <p>Visitors scroll through the wall and click “Pray For” when they pause to pray for a request.</p>
+          </div>
+          <div class="about-card">
+            <h3>3. Encourage</h3>
+            <p>The requester receives a warm email letting them know they were remembered in prayer.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      The Prayer Project exists to encourage, comfort, and remind people that they are not forgotten.
+    </div>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
