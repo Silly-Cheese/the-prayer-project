@@ -6,47 +6,30 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const EMAIL_ENDPOINT = "https://script.google.com/macros/s/AKfycbybp0fuEfyalVu-PHDWeJW6Z2Zbqyqi7huKbCiRjIDRWg5IFBOSU7ciB9b7_4QJ3dLuBg/exec";
 
-const prayerForm = document.getElementById("prayerForm");
-const prayerGrid = document.getElementById("prayerGrid");
-const formNotice = document.getElementById("formNotice");
-const submitBtn = document.getElementById("submitBtn");
-const searchInput = document.getElementById("searchInput");
-const categoryFilter = document.getElementById("categoryFilter");
-const totalRequestsElement = document.getElementById("totalRequests");
-const totalPrayersElement = document.getElementById("totalPrayers");
-const urgentRequestsElement = document.getElementById("urgentRequests");
+const prayerForm = document.getElementById("prayerForm"), prayerGrid = document.getElementById("prayerGrid"), formNotice = document.getElementById("formNotice"), submitBtn = document.getElementById("submitBtn"), searchInput = document.getElementById("searchInput"), categoryFilter = document.getElementById("categoryFilter"), totalRequestsElement = document.getElementById("totalRequests"), totalPrayersElement = document.getElementById("totalPrayers"), urgentRequestsElement = document.getElementById("urgentRequests");
 let allRequests = [];
 
 prayerForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Submitting Prayer Request...";
+    submitBtn.disabled = true; submitBtn.textContent = "Submitting Prayer Request...";
     const email = document.getElementById("email").value.trim();
     const publicRequest = { title: document.getElementById("title").value.trim(), category: document.getElementById("category").value, message: document.getElementById("message").value.trim(), urgent: document.getElementById("urgent").value === "true", prayerCount: 0, reportCount: 0, status: "pending", createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
     const createdRequest = await addDoc(collection(db, "prayer_requests"), publicRequest);
     await addDoc(collection(db, "prayer_private_contacts"), { requestId: createdRequest.id, email, createdAt: serverTimestamp() });
     showNotice("Your prayer request has been submitted for review. Once approved, it will appear on the prayer wall.", "success");
-    prayerForm.reset();
-    await loadPrayerRequests();
-  } catch (error) {
-    console.error(error);
-    showNotice("Something went wrong while submitting your prayer request. Please check the Firestore rules and try again.", "error");
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Submit for Review";
-  }
+    prayerForm.reset(); await loadPrayerRequests();
+  } catch (error) { console.error(error); showNotice("Something went wrong while submitting your prayer request. Please check the Firestore rules and try again.", "error"); }
+  finally { submitBtn.disabled = false; submitBtn.textContent = "Submit for Review"; }
 });
 
 async function loadPrayerRequests() {
   try {
-    const prayerQuery = query(collection(db, "prayer_requests"), where("status", "==", "approved"));
-    const snapshot = await getDocs(prayerQuery);
+    const snapshot = await getDocs(query(collection(db, "prayer_requests"), where("status", "==", "approved")));
     allRequests = [];
     snapshot.forEach((documentSnapshot) => allRequests.push({ id: documentSnapshot.id, ...documentSnapshot.data() }));
     allRequests.sort((a,b) => getTime(b.createdAt) - getTime(a.createdAt));
-    renderPrayerRequests(allRequests);
-    updateStatistics();
+    renderPrayerRequests(allRequests); updateStatistics();
   } catch (error) {
     console.error(error);
     prayerGrid.innerHTML = `<div class="empty">The prayer wall could not load yet. Please make sure your Firestore rules are published and that at least one request has been approved.</div>`;
@@ -62,9 +45,40 @@ function renderPrayerRequests(requests) {
   attachPrayButtons(); attachReportButtons();
 }
 
-function attachPrayButtons(){ document.querySelectorAll(".pray-button").forEach((button)=>{ button.addEventListener("click",async()=>{ const requestId=button.dataset.id; const prayerRequest=allRequests.find((request)=>request.id===requestId); if(!prayerRequest)return; try{ button.disabled=true; button.textContent="Sending Prayer..."; await updateDoc(doc(db,"prayer_requests",requestId),{prayerCount:increment(1),updatedAt:serverTimestamp()}); const contactSnapshot=await getDocs(query(collection(db,"prayer_private_contacts"),where("requestId","==",requestId))); let email=""; contactSnapshot.forEach((contactDoc)=>{email=contactDoc.data().email||"";}); if(email){ await fetch(EMAIL_ENDPOINT,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({email,requestTitle:prayerRequest.title,requestMessage:prayerRequest.message,prayerCount:(prayerRequest.prayerCount||0)+1})}); } button.textContent="Prayer Sent"; setTimeout(()=>{button.textContent="Pray For This Request";button.disabled=false;},2600); await loadPrayerRequests(); }catch(error){ console.error(error); button.textContent="Failed"; setTimeout(()=>{button.textContent="Pray For This Request";button.disabled=false;},2400); } }); }); }
-function attachReportButtons(){ document.querySelectorAll(".report-button").forEach((button)=>{ button.addEventListener("click",async()=>{ const requestId=button.dataset.id; const reason=prompt("Why are you reporting this request?"); if(!reason||!reason.trim())return; try{ button.disabled=true; button.textContent="Reporting..."; await addDoc(collection(db,"reports"),{requestId,reason:reason.trim(),createdAt:serverTimestamp(),status:"open"}); await updateDoc(doc(db,"prayer_requests",requestId),{reportCount:increment(1),updatedAt:serverTimestamp()}); button.textContent="Reported"; }catch(error){ console.error(error); button.textContent="Report Failed"; setTimeout(()=>{button.textContent="Report Request";button.disabled=false;},2200); } }); }); }
+function attachPrayButtons(){
+  document.querySelectorAll(".pray-button").forEach((button)=>{
+    button.addEventListener("click",async()=>{
+      const requestId=button.dataset.id;
+      const prayerRequest=allRequests.find((request)=>request.id===requestId);
+      if(!prayerRequest)return;
+      try{
+        button.disabled=true; button.textContent="Sending Prayer...";
+        await updateDoc(doc(db,"prayer_requests",requestId),{prayerCount:increment(1),updatedAt:serverTimestamp()});
+        const email = await getPrivateEmail(requestId);
+        if(email){
+          await fetch(EMAIL_ENDPOINT,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({email,requestTitle:prayerRequest.title,requestMessage:prayerRequest.message,prayerCount:(prayerRequest.prayerCount||0)+1})});
+        }
+        button.textContent="Prayer Sent";
+        setTimeout(()=>{button.textContent="Pray For This Request";button.disabled=false;},2600);
+        await loadPrayerRequests();
+      }catch(error){
+        console.error(error);
+        button.textContent="Prayer Counted";
+        setTimeout(()=>{button.textContent="Pray For This Request";button.disabled=false;},2600);
+        await loadPrayerRequests();
+      }
+    });
+  });
+}
 
+async function getPrivateEmail(requestId){
+  const snapshot = await getDocs(collection(db,"prayer_private_contacts"));
+  let email = "";
+  snapshot.forEach((contactDoc)=>{ if(contactDoc.data().requestId === requestId) email = contactDoc.data().email || ""; });
+  return email;
+}
+
+function attachReportButtons(){ document.querySelectorAll(".report-button").forEach((button)=>{ button.addEventListener("click",async()=>{ const requestId=button.dataset.id; const reason=prompt("Why are you reporting this request?"); if(!reason||!reason.trim())return; try{ button.disabled=true; button.textContent="Reporting..."; await addDoc(collection(db,"reports"),{requestId,reason:reason.trim(),createdAt:serverTimestamp(),status:"open"}); await updateDoc(doc(db,"prayer_requests",requestId),{reportCount:increment(1),updatedAt:serverTimestamp()}); button.textContent="Reported"; }catch(error){ console.error(error); button.textContent="Report Failed"; setTimeout(()=>{button.textContent="Report Request";button.disabled=false;},2200); } }); }); }
 searchInput?.addEventListener("input", filterRequests); categoryFilter?.addEventListener("change", filterRequests);
 function filterRequests(){ const searchValue=searchInput.value.toLowerCase().trim(); const categoryValue=categoryFilter.value; const filteredRequests=allRequests.filter((request)=>{ const matchesSearch=request.title.toLowerCase().includes(searchValue)||request.message.toLowerCase().includes(searchValue); const matchesCategory=categoryValue==="all"||request.category===categoryValue; return matchesSearch&&matchesCategory;}); renderPrayerRequests(filteredRequests); }
 function updateStatistics(){ totalRequestsElement.textContent=allRequests.length; totalPrayersElement.textContent=allRequests.reduce((sum,request)=>sum+(request.prayerCount||0),0); urgentRequestsElement.textContent=allRequests.filter((request)=>request.urgent).length; }
