@@ -9,6 +9,8 @@ const EMAIL_ENDPOINT = "https://script.google.com/macros/s/AKfycbzmdSzOGpNltJ7ss
 const prayerForm = document.getElementById("prayerForm"), prayerGrid = document.getElementById("prayerGrid"), formNotice = document.getElementById("formNotice"), submitBtn = document.getElementById("submitBtn"), searchInput = document.getElementById("searchInput"), categoryFilter = document.getElementById("categoryFilter"), totalRequestsElement = document.getElementById("totalRequests"), totalPrayersElement = document.getElementById("totalPrayers"), urgentRequestsElement = document.getElementById("urgentRequests");
 let allRequests = [];
 
+window.PRAYER_PROJECT_DEBUG = { EMAIL_ENDPOINT };
+
 prayerForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
@@ -50,16 +52,21 @@ function attachPrayButtons(){
       const requestId=button.dataset.id;
       const prayerRequest=allRequests.find((request)=>request.id===requestId);
       if(!prayerRequest)return;
+      if(!prayerRequest.email){ button.textContent="No Email Found"; setTimeout(()=>button.textContent="Pray For This Request",2600); return; }
       try{
         button.disabled=true; button.textContent="Sending Prayer...";
-        await updateDoc(doc(db,"prayer_requests",requestId),{prayerCount:increment(1),updatedAt:serverTimestamp()});
         const emailResponse = await fetch(EMAIL_ENDPOINT,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({email:prayerRequest.email,requestTitle:prayerRequest.title,requestMessage:prayerRequest.message,prayerCount:(prayerRequest.prayerCount||0)+1})});
-        const emailResult = await emailResponse.json().catch(()=>({success:false}));
+        const emailText = await emailResponse.text();
+        let emailResult = { success:false, raw: emailText };
+        try { emailResult = JSON.parse(emailText); } catch(parseError) { console.warn("Apps Script returned non-JSON:", emailText); }
+        console.log("Prayer Project email response:", emailResult);
+        await updateDoc(doc(db,"prayer_requests",requestId),{prayerCount:increment(1),updatedAt:serverTimestamp()});
         button.textContent = emailResult.success ? "Prayer Sent" : "Prayer Counted";
         setTimeout(()=>{button.textContent="Pray For This Request";button.disabled=false;},2600);
         await loadPrayerRequests();
       }catch(error){
-        console.error(error);
+        console.error("Prayer/email send failed:", error);
+        try { await updateDoc(doc(db,"prayer_requests",requestId),{prayerCount:increment(1),updatedAt:serverTimestamp()}); } catch(updateError){ console.error(updateError); }
         button.textContent="Prayer Counted";
         setTimeout(()=>{button.textContent="Pray For This Request";button.disabled=false;},2600);
         await loadPrayerRequests();
