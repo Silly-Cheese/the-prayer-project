@@ -1,109 +1,134 @@
 # The Prayer Project
 
-The Prayer Project is a warm, peaceful, anonymous prayer wall where people can submit prayer requests and others can click **Pray For This Request** to let the requester know they were prayed for.
+The Prayer Project is a calm, faith-centered anonymous prayer wall where people can submit prayer requests, pray for others, and send quiet encouragement through email notifications.
 
-This project uses:
+## Current Stack
 
 - GitHub Pages for hosting
 - Firebase Firestore for prayer request storage
-- Google Apps Script for sending email notifications
+- Firebase Authentication for admin login
+- Google Apps Script for email notifications
 
 ## Current Features
 
 - Anonymous prayer request submission
-- Live prayer wall
+- Public prayer wall
 - Prayer counters
 - Urgent request tags
 - Search and category filtering
-- Private email notification system through Google Apps Script
-- Responsive, mobile-friendly design
-- Warm, calm, faith-centered styling
+- Report button for inappropriate requests
+- Reported requests are automatically hidden
+- Admin dashboard for moderation
+- Admin login through Firebase Authentication
+- Daily Scripture system
+- Homepage announcement system
+- Crisis resources page
+- Privacy and terms pages
+- Custom black/warm visual theme
+- Google Apps Script email notification system
 
-## Files
+## Current Data Flow
 
-```plaintext
-index.html
-app.js
-README.md
-firestore.rules
-google-apps-script-email.js
-```
+### Prayer Request Submission
 
-## Firebase Setup
+1. Visitor submits a prayer request.
+2. Request is saved to Firestore in `prayer_requests`.
+3. Request appears publicly immediately with `status: "approved"`.
+4. The requester's email is stored in the document but is not displayed on the public page.
 
-Create a Firebase project and enable Firestore Database.
+### Prayer Notification
 
-The website currently writes prayer requests into this collection:
+1. Visitor clicks `Pray For This Request`.
+2. Website sends the requester's email, request title, request message, and prayer count to Google Apps Script.
+3. Apps Script sends the prayer notification email.
+4. Firestore prayer count is updated.
+
+### Reporting
+
+1. Visitor reports a prayer request.
+2. A report is created in `reports`.
+3. The prayer request status changes to `reported`.
+4. The request is hidden from the public prayer wall.
+5. Admin reviews it in the dashboard.
+
+## Firestore Collections
 
 ```plaintext
 prayer_requests
+reports
+settings
+admins
 ```
 
-Each request looks like this:
+## Priority List
 
-```json
-{
-  "title": "Please pray for my family",
-  "category": "Family",
-  "message": "We are going through a hard time.",
-  "email": "private@example.com",
-  "urgent": false,
-  "prayerCount": 0,
-  "createdAt": "server timestamp"
-}
-```
+### Priority 1: Confirm Email Reliability
 
-## Important Privacy Note
+- Submit a brand-new prayer request with a real email.
+- Click `Pray For This Request`.
+- Check the browser console for `Prayer Project email response:`.
+- Confirm Apps Script returns `success: true`.
+- Check inbox and spam.
+- Confirm Apps Script execution logs show successful runs.
 
-The current simple version stores the requester's email in Firestore. This works for early testing, but the better long-term version should hide emails from public reads by either:
+### Priority 2: Confirm Firestore Rules
 
-1. Separating public prayer data from private email data, or
-2. Using stronger Firestore security rules, or
-3. Routing submissions through a backend.
+- Confirm public users can create prayer requests.
+- Confirm public users can increase prayer counts.
+- Confirm public users can report requests.
+- Confirm reported requests disappear from the public wall.
+- Confirm signed-in admins can read all requests and reports.
 
-## GitHub Pages Setup
+### Priority 3: Confirm Admin Dashboard Settings
 
-Go to:
+- Confirm daily Scripture saves correctly.
+- Confirm daily Scripture reference saves correctly.
+- Confirm homepage announcement saves correctly.
+- Confirm settings display publicly on the homepage.
+
+### Priority 4: Custom Domain Launch
+
+- Update the `CNAME` file with the real domain.
+- Configure DNS A records for GitHub Pages.
+- Configure the `www` CNAME record.
+- Add the custom domain in GitHub Pages settings.
+- Enforce HTTPS after GitHub verifies the domain.
+- Add the custom domain to Firebase Authentication authorized domains.
+
+### Priority 5: Branding Polish
+
+- Add a favicon.
+- Add a simple logo mark.
+- Add Open Graph/social preview tags.
+- Add a `site.webmanifest` file.
+- Add theme-color metadata for mobile browsers.
+
+### Priority 6: Final Content Review
+
+- Review About page wording.
+- Review Privacy Policy wording.
+- Review Terms of Service wording.
+- Review Crisis Resources page.
+- Confirm the site clearly says it is not an emergency service.
+
+## Recommended Favicon Direction
+
+The best favicon/logo concept is a minimal cream-gold symbol on black:
+
+- A small four-point star/candle flame
+- A soft circular outline
+- No detailed text inside the favicon
+- Warm cream/gold on black
+
+Suggested concept:
 
 ```plaintext
-Repository Settings → Pages
+Black circle
+Thin warm-gold ring
+Small cream four-point star or candle flame in the center
 ```
 
-Use:
-
-```plaintext
-Source: Deploy from branch
-Branch: main
-Folder: /root
-```
-
-Your website should become available at:
-
-```plaintext
-https://silly-cheese.github.io/the-prayer-project/
-```
-
-## Google Apps Script Setup
-
-1. Go to https://script.google.com
-2. Create a new project
-3. Copy the contents of `google-apps-script-email.js`
-4. Replace `ADMIN_EMAIL` with your email
-5. Deploy as a Web App
-6. Set Execute As to `Me`
-7. Set access to `Anyone`
-8. Copy the Web App URL into `app.js`
-
-## Recommended Next Features
-
-- Admin moderation dashboard
-- Request approval before public display
-- Report prayer request button
-- Email privacy separation
-- Prayer encouragement messages
-- Daily verse banner
-- Admin-only statistics page
-- CAPTCHA or spam protection
+This matches the current theme and feels calm, prayerful, and recognizable at small sizes.
 
 ## Purpose
 
