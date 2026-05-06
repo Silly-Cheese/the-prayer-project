@@ -4,7 +4,7 @@ import { getFirestore, collection, addDoc, getDocs, query, where, serverTimestam
 const firebaseConfig = { apiKey:"AIzaSyAaaABQB1T_SaZ6TARafIXjJ6Zk-upjLO0", authDomain:"prayer-projec.firebaseapp.com", projectId:"prayer-projec", storageBucket:"prayer-projec.firebasestorage.app", messagingSenderId:"47966669764", appId:"1:47966669764:web:b875d2ea5bf75e3b7b3291" };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const EMAIL_ENDPOINT = "https://script.google.com/macros/s/AKfycbybp0fuEfyalVu-PHDWeJW6Z2Zbqyqi7huKbCiRjIDRWg5IFBOSU7ciB9b7_4QJ3dLuBg/exec";
+const EMAIL_ENDPOINT = "https://script.google.com/macros/s/AKfycbzmdSzOGpNltJ7ssdZhTw689TL_q2NpKZXt0w9V-NFoCIJicwFnxqUi8qhqPo4qGRmYdg/exec";
 
 const prayerForm = document.getElementById("prayerForm"), prayerGrid = document.getElementById("prayerGrid"), formNotice = document.getElementById("formNotice"), submitBtn = document.getElementById("submitBtn"), searchInput = document.getElementById("searchInput"), categoryFilter = document.getElementById("categoryFilter"), totalRequestsElement = document.getElementById("totalRequests"), totalPrayersElement = document.getElementById("totalPrayers"), urgentRequestsElement = document.getElementById("urgentRequests");
 let allRequests = [];
