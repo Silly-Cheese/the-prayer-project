@@ -1,1 +1,38 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Admin Login | The Prayer Project</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#06101f,#0b1730 45%,#050914);font-family:Inter,sans-serif;color:#f8fafc}.card{width:min(460px,calc(100% - 32px));padding:34px;border-radius:28px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}h1{margin-top:0;font-size:42px}p{color:#cbd5e1;line-height:1.8}label{display:grid;gap:8px;margin-top:16px;font-weight:700;color:#cbd5e1}input{border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.24);color:#fff;border-radius:16px;padding:14px;font:inherit}.btn{margin-top:20px;width:100%;border:0;border-radius:999px;padding:14px;font-weight:800;background:#e7c873;color:#07111f;cursor:pointer}.notice{margin-top:16px;color:#fecaca}</style></head><body><main class="card"><h1>Admin Login</h1><p>Authorized administrators can sign in below to access moderation and platform controls.</p><label>Email<input id="email" type="email" placeholder="admin@example.com"></label><label>Password<input id="password" type="password" placeholder="Password"></label><button class="btn" id="loginBtn">Sign In</button><div id="notice" class="notice"></div></main><script type="module" src="./auth.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Admin Login | The Prayer Project</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./theme.css">
+  <style>
+    body{display:block;min-height:100vh}.login-wrap{min-height:calc(100vh - 82px);display:grid;place-items:center;padding:54px 0}.login-grid{width:min(1040px,calc(100% - 38px));display:grid;grid-template-columns:1fr 460px;gap:28px;align-items:center}.intro{padding:20px 0}.intro p{max-width:620px}.login-card{padding:34px;border-radius:34px}.login-card h2{font-family:"Playfair Display",serif;font-size:42px;letter-spacing:-.04em;margin:0 0 10px}.login-card p{color:var(--muted);line-height:1.8;margin:0 0 22px}.form-row{display:grid;gap:9px;margin-top:16px}label{color:var(--muted);font-size:13px;font-weight:900}.btn{margin-top:22px}.notice{min-height:22px;margin-top:16px;color:var(--danger);font-size:14px;line-height:1.6}.small-note{margin-top:20px;padding:18px;border-radius:22px;background:rgba(216,195,165,.07);border:1px solid rgba(216,195,165,.18);color:var(--soft);font-size:13px;line-height:1.7}.back-link{display:inline-flex;margin-top:22px;color:var(--warm2);font-weight:900}@media(max-width:900px){.login-grid{grid-template-columns:1fr}.intro{text-align:left}.login-wrap{place-items:start center;padding-top:36px}}
+  </style>
+</head>
+<body>
+  <nav class="nav"><div class="shell nav-inner"><a class="brand" href="index.html"><div class="brand-mark">✦</div><div class="brand-title">The Prayer Project<span>Admin Access</span></div></a><div class="nav-links"><a href="index.html">Home</a><a href="privacy.html">Privacy</a><a href="crisis.html">Crisis Help</a></div></div></nav>
+  <main class="login-wrap">
+    <div class="login-grid">
+      <section class="intro">
+        <div class="eyebrow">Protected Moderation</div>
+        <h1>Sign in to care for the prayer wall.</h1>
+        <p class="lead">This area is reserved for authorized administrators who review reports, restore appropriate requests, remove harmful content, and manage site settings.</p>
+        <a class="back-link" href="index.html">Return to the prayer wall</a>
+      </section>
+      <section class="login-card card">
+        <h2>Admin Login</h2>
+        <p>Enter your Firebase admin account credentials to continue.</p>
+        <div class="form-row"><label for="email">Email</label><input id="email" type="email" autocomplete="email" placeholder="admin@example.com"></div>
+        <div class="form-row"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Password"></div>
+        <button class="btn btn-primary btn-block" id="loginBtn">Sign In</button>
+        <div id="notice" class="notice"></div>
+        <div class="small-note">Only trusted administrators should have access. If you are not authorized, return to the public prayer wall.</div>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="./auth.js"></script>
+</body>
+</html>
