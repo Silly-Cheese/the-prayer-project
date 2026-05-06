@@ -17,11 +17,18 @@ prayerForm?.addEventListener("submit", async (event) => {
     const publicRequest = { title: document.getElementById("title").value.trim(), category: document.getElementById("category").value, message: document.getElementById("message").value.trim(), urgent: document.getElementById("urgent").value === "true", prayerCount: 0, reportCount: 0, status: "approved", createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
     const createdRequest = await addDoc(collection(db, "prayer_requests"), publicRequest);
     await addDoc(collection(db, "prayer_private_contacts"), { requestId: createdRequest.id, email, createdAt: serverTimestamp() });
+    await saveContactToEmailService(createdRequest.id, email);
     showNotice("Your prayer request has been posted. People can now pray for you.", "success");
     prayerForm.reset(); await loadPrayerRequests();
-  } catch (error) { console.error(error); showNotice("Something went wrong while submitting your prayer request. Please check the Firestore rules and try again.", "error"); }
+  } catch (error) { console.error(error); showNotice("Something went wrong while submitting your prayer request. Please check the Firestore rules and Apps Script deployment.", "error"); }
   finally { submitBtn.disabled = false; submitBtn.textContent = "Submit Prayer Request"; }
 });
+
+async function saveContactToEmailService(requestId, email){
+  const response = await fetch(EMAIL_ENDPOINT,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"saveContact",requestId,email})});
+  const result = await response.json().catch(()=>({success:false,message:"Invalid Apps Script response"}));
+  if(!result.success){ throw new Error(result.message || result.error || "Failed to save email contact."); }
+}
 
 async function loadPrayerRequests() {
   try {
@@ -54,8 +61,9 @@ function attachPrayButtons(){
       try{
         button.disabled=true; button.textContent="Sending Prayer...";
         await updateDoc(doc(db,"prayer_requests",requestId),{prayerCount:increment(1),updatedAt:serverTimestamp()});
-        await fetch(EMAIL_ENDPOINT,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({requestId,requestTitle:prayerRequest.title,requestMessage:prayerRequest.message,prayerCount:(prayerRequest.prayerCount||0)+1})});
-        button.textContent="Prayer Sent";
+        const emailResponse = await fetch(EMAIL_ENDPOINT,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"sendPrayerEmail",requestId,requestTitle:prayerRequest.title,requestMessage:prayerRequest.message,prayerCount:(prayerRequest.prayerCount||0)+1})});
+        const emailResult = await emailResponse.json().catch(()=>({success:false}));
+        button.textContent = emailResult.success ? "Prayer Sent" : "Prayer Counted";
         setTimeout(()=>{button.textContent="Pray For This Request";button.disabled=false;},2600);
         await loadPrayerRequests();
       }catch(error){
