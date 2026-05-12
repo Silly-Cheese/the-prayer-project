@@ -10,8 +10,11 @@ const PRAYER_EMAIL = "pray@ask4prayers.com";
 const prayerForm = document.getElementById("prayerForm"), prayerGrid = document.getElementById("prayerGrid"), formNotice = document.getElementById("formNotice"), submitBtn = document.getElementById("submitBtn"), searchInput = document.getElementById("searchInput"), categoryFilter = document.getElementById("categoryFilter"), totalRequestsElement = document.getElementById("totalRequests"), totalPrayersElement = document.getElementById("totalPrayers"), urgentRequestsElement = document.getElementById("urgentRequests");
 let allRequests = [];
 let submissionsOpen = true;
+let selectedAnsweredRequest = null;
 
 window.PRAYER_PROJECT_DEBUG = { EMAIL_ENDPOINT, PRAYER_EMAIL };
+
+createAnsweredModal();
 
 prayerForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -80,48 +83,130 @@ function renderPrayerRequests(requests) {
     const createdDate = request.createdAt?.toDate ? request.createdAt.toDate().toLocaleDateString() : "Recently";
     const answeredClass = request.answered ? " answered" : "";
     const answeredTag = request.answered ? '<div class="tag answered-tag">Answered!</div>' : '';
-    return `<article class="prayer-card${answeredClass}" data-card-id="${request.id}" tabindex="0" role="button" aria-label="Open answered prayer option for ${escapeHtml(request.title)}"><div class="tag-row"><div class="tag">🙏 ${escapeHtml(request.category)}</div>${request.urgent ? '<div class="tag urgent">Urgent</div>' : ''}${answeredTag}</div><h3>${escapeHtml(request.title)}</h3><p>${escapeHtml(request.message)}</p><div class="card-footer"><div class="meta"><span>${createdDate}</span><span>${request.prayerCount || 0} prayed</span></div><div class="answered-help">${request.answered ? 'This prayer has been marked answered.' : 'Requester: click the card to mark this answered.'}</div><button class="btn btn-primary btn-block pray-button" data-id="${request.id}">Pray For This Request</button><button class="btn btn-secondary btn-block report-button" data-id="${request.id}">Report Request</button></div></article>`;
+    const answeredButton = request.answered ? '<button class="btn btn-secondary btn-block answered-button" disabled>Answered!</button>' : `<button class="btn btn-secondary btn-block answered-button" data-id="${request.id}">Mark as Answered</button>`;
+    return `<article class="prayer-card${answeredClass}" data-card-id="${request.id}" tabindex="0"><div class="tag-row"><div class="tag">🙏 ${escapeHtml(request.category)}</div>${request.urgent ? '<div class="tag urgent">Urgent</div>' : ''}${answeredTag}</div><h3>${escapeHtml(request.title)}</h3><p>${escapeHtml(request.message)}</p><div class="card-footer"><div class="meta"><span>${createdDate}</span><span>${request.prayerCount || 0} prayed</span></div><div class="answered-help">${request.answered ? 'This prayer has been marked answered.' : 'Requester: click Mark as Answered and confirm with your email.'}</div><button class="btn btn-primary btn-block pray-button" data-id="${request.id}">Pray For This Request</button>${answeredButton}<button class="btn btn-secondary btn-block report-button" data-id="${request.id}">Report Request</button></div></article>`;
   }).join("");
   attachCardAnswerHandlers(); attachPrayButtons(); attachReportButtons();
 }
 
 function attachCardAnswerHandlers(){
+  document.querySelectorAll(".answered-button[data-id]").forEach((button)=>{
+    button.addEventListener("click",(event)=>{
+      event.stopPropagation();
+      openAnsweredModal(button.dataset.id);
+    });
+  });
+
   document.querySelectorAll(".prayer-card[data-card-id]").forEach((card)=>{
-    const openAnswerPrompt = async()=>{
-      const requestId = card.dataset.cardId;
-      const prayerRequest = allRequests.find((request)=>request.id===requestId);
-      if(!prayerRequest || prayerRequest.answered) return;
-
-      const enteredEmail = prompt("If this is your prayer request and God has answered it, enter the email used when submitting the request.");
-      if(!enteredEmail) return;
-
-      if(normalizeEmail(enteredEmail) !== normalizeEmail(prayerRequest.email)){
-        alert("That email does not match this prayer request.");
-        return;
-      }
-
-      try{
-        await updateDoc(doc(db,"prayer_requests",requestId),{answered:true,answeredAt:serverTimestamp(),updatedAt:serverTimestamp()});
-        alert("This prayer request has been marked answered.");
-        await loadPrayerRequests();
-      }catch(error){
-        console.error(error);
-        alert("This could not be marked answered. Please try again or contact the site administrator.");
-      }
-    };
-
     card.addEventListener("click",(event)=>{
       if(event.target.closest("button")) return;
-      openAnswerPrompt();
+      openAnsweredModal(card.dataset.cardId);
     });
 
     card.addEventListener("keydown",(event)=>{
       if(event.key !== "Enter" && event.key !== " ") return;
       if(event.target.closest("button")) return;
       event.preventDefault();
-      openAnswerPrompt();
+      openAnsweredModal(card.dataset.cardId);
     });
   });
+}
+
+function createAnsweredModal(){
+  const modal = document.createElement("div");
+  modal.id = "answeredModal";
+  modal.className = "answered-modal";
+  modal.innerHTML = `
+    <div class="answered-modal-backdrop" data-close-answered></div>
+    <section class="answered-modal-card" role="dialog" aria-modal="true" aria-labelledby="answeredModalTitle">
+      <button class="answered-modal-close" type="button" data-close-answered aria-label="Close">×</button>
+      <div class="eyebrow">Answered Prayer</div>
+      <h2 id="answeredModalTitle">Mark this prayer as answered.</h2>
+      <p id="answeredModalDescription">Enter the same email you used when submitting this prayer request. This helps make sure only the requester can mark it answered.</p>
+      <div class="answered-modal-request" id="answeredModalRequest"></div>
+      <label class="answered-modal-label" for="answeredEmailInput">Requester Email</label>
+      <input id="answeredEmailInput" type="email" placeholder="you@example.com" autocomplete="email">
+      <div class="answered-modal-notice" id="answeredModalNotice"></div>
+      <button class="btn btn-primary btn-block" id="confirmAnsweredBtn" type="button">Mark Answered</button>
+    </section>
+  `;
+  document.body.appendChild(modal);
+
+  modal.querySelectorAll("[data-close-answered]").forEach((item)=>item.addEventListener("click", closeAnsweredModal));
+  document.getElementById("confirmAnsweredBtn")?.addEventListener("click", confirmAnsweredPrayer);
+  document.getElementById("answeredEmailInput")?.addEventListener("keydown",(event)=>{ if(event.key === "Enter") confirmAnsweredPrayer(); });
+  document.addEventListener("keydown",(event)=>{ if(event.key === "Escape") closeAnsweredModal(); });
+}
+
+function openAnsweredModal(requestId){
+  const prayerRequest = allRequests.find((request)=>request.id===requestId);
+  if(!prayerRequest || prayerRequest.answered) return;
+
+  selectedAnsweredRequest = prayerRequest;
+  const modal = document.getElementById("answeredModal");
+  const requestBox = document.getElementById("answeredModalRequest");
+  const input = document.getElementById("answeredEmailInput");
+  const notice = document.getElementById("answeredModalNotice");
+
+  requestBox.innerHTML = `<strong>${escapeHtml(prayerRequest.title)}</strong><span>${escapeHtml(prayerRequest.message)}</span>`;
+  input.value = "";
+  notice.textContent = "";
+  notice.className = "answered-modal-notice";
+  modal.classList.add("show");
+  setTimeout(()=>input.focus(),50);
+}
+
+function closeAnsweredModal(){
+  const modal = document.getElementById("answeredModal");
+  if(!modal) return;
+  modal.classList.remove("show");
+  selectedAnsweredRequest = null;
+}
+
+async function confirmAnsweredPrayer(){
+  if(!selectedAnsweredRequest) return;
+
+  const input = document.getElementById("answeredEmailInput");
+  const notice = document.getElementById("answeredModalNotice");
+  const button = document.getElementById("confirmAnsweredBtn");
+  const enteredEmail = normalizeEmail(input.value);
+  const savedEmail = normalizeEmail(selectedAnsweredRequest.email);
+
+  if(!enteredEmail){
+    showAnsweredNotice("Please enter the email used on this request.", "error");
+    return;
+  }
+
+  if(!savedEmail){
+    showAnsweredNotice("This request does not have an email saved, so it cannot be marked answered from the public page.", "error");
+    return;
+  }
+
+  if(enteredEmail !== savedEmail){
+    showAnsweredNotice("That email does not match this prayer request.", "error");
+    return;
+  }
+
+  try{
+    button.disabled = true;
+    button.textContent = "Marking Answered...";
+    await updateDoc(doc(db,"prayer_requests",selectedAnsweredRequest.id),{answered:true,answeredAt:serverTimestamp(),updatedAt:serverTimestamp()});
+    showAnsweredNotice("This prayer request has been marked answered.", "success");
+    await loadPrayerRequests();
+    setTimeout(closeAnsweredModal,900);
+  }catch(error){
+    console.error("Answered update failed:", error);
+    showAnsweredNotice("This could not be marked answered. Check Firestore rules for answered updates.", "error");
+  }finally{
+    button.disabled = false;
+    button.textContent = "Mark Answered";
+  }
+}
+
+function showAnsweredNotice(message,type){
+  const notice = document.getElementById("answeredModalNotice");
+  notice.textContent = message;
+  notice.className = `answered-modal-notice ${type}`;
 }
 
 function attachPrayButtons(){
