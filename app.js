@@ -11,10 +11,13 @@ const prayerForm = document.getElementById("prayerForm"), prayerGrid = document.
 let allRequests = [];
 let submissionsOpen = true;
 let selectedAnsweredRequest = null;
+let wallFilter = "all";
 
 window.PRAYER_PROJECT_DEBUG = { EMAIL_ENDPOINT, PRAYER_EMAIL };
 
+injectAnsweredModalStyles();
 createAnsweredModal();
+createWallFilterButtons();
 
 prayerForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -25,43 +28,57 @@ prayerForm?.addEventListener("submit", async (event) => {
   }
 
   try {
-    submitBtn.disabled = true; submitBtn.textContent = "Submitting Prayer Request...";
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submitting Prayer Request...";
+
     const email = document.getElementById("email").value.trim();
-    const publicRequest = { title: document.getElementById("title").value.trim(), category: document.getElementById("category").value, message: document.getElementById("message").value.trim(), email, urgent: document.getElementById("urgent").value === "true", prayerCount: 0, reportCount: 0, answered: false, status: "approved", createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+    const answerCode = generateAnswerCode();
+    const answerCodeHash = await hashText(answerCode);
+    const publicRequest = {
+      title: document.getElementById("title").value.trim(),
+      category: document.getElementById("category").value,
+      message: document.getElementById("message").value.trim(),
+      email,
+      urgent: document.getElementById("urgent").value === "true",
+      prayerCount: 0,
+      reportCount: 0,
+      answered: false,
+      answerCodeHash,
+      status: "approved",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
     await addDoc(collection(db, "prayer_requests"), publicRequest);
-    showNotice("Your prayer request has been posted. People can now pray for you.", "success");
-    prayerForm.reset(); await loadPrayerRequests();
-  } catch (error) { console.error(error); showNotice("Something went wrong while submitting your prayer request. Please check the Firestore rules.", "error"); }
-  finally { submitBtn.disabled = !submissionsOpen; submitBtn.textContent = submissionsOpen ? "Submit Prayer Request" : "Submissions Closed"; }
+    showNotice(`Your prayer request has been posted. Save this private answer code so you can mark the request answered later: ${answerCode}`, "success", 30000);
+    prayerForm.reset();
+    await loadPrayerRequests();
+  } catch (error) {
+    console.error(error);
+    showNotice("Something went wrong while submitting your prayer request. Please check the Firestore rules.", "error");
+  } finally {
+    submitBtn.disabled = !submissionsOpen;
+    submitBtn.textContent = submissionsOpen ? "Submit Prayer Request" : "Submissions Closed";
+  }
 });
 
 async function loadSubmissionSettings() {
   try {
     const settingsDoc = await getDoc(doc(db, "settings", "site"));
-    if (settingsDoc.exists()) {
-      const data = settingsDoc.data();
-      submissionsOpen = data.submissionsOpen !== false;
-    }
+    if (settingsDoc.exists()) submissionsOpen = settingsDoc.data().submissionsOpen !== false;
   } catch (error) {
     console.error("Could not load submission settings:", error);
     submissionsOpen = true;
   }
-
   applySubmissionState();
 }
 
 function applySubmissionState() {
   if (!prayerForm || !submitBtn) return;
-
-  const fields = prayerForm.querySelectorAll("input, select, textarea");
-  fields.forEach((field) => { field.disabled = !submissionsOpen; });
-
+  prayerForm.querySelectorAll("input, select, textarea").forEach((field) => { field.disabled = !submissionsOpen; });
   submitBtn.disabled = !submissionsOpen;
   submitBtn.textContent = submissionsOpen ? "Submit Prayer Request" : "Submissions Closed";
-
-  if (!submissionsOpen) {
-    showNotice(`Online prayer request submissions are currently closed. Please email your request to ${PRAYER_EMAIL}.`, "error", 20000);
-  }
+  if (!submissionsOpen) showNotice(`Online prayer request submissions are currently closed. Please email your request to ${PRAYER_EMAIL}.`, "error", 20000);
 }
 
 async function loadPrayerRequests() {
@@ -70,7 +87,8 @@ async function loadPrayerRequests() {
     allRequests = [];
     snapshot.forEach((documentSnapshot) => allRequests.push({ id: documentSnapshot.id, ...documentSnapshot.data() }));
     allRequests.sort((a,b) => getTime(b.createdAt) - getTime(a.createdAt));
-    renderPrayerRequests(allRequests); updateStatistics();
+    filterRequests();
+    updateStatistics();
   } catch (error) {
     console.error(error);
     prayerGrid.innerHTML = `<div class="empty">The prayer wall could not load yet. Please make sure your Firestore rules are published.</div>`;
@@ -78,19 +96,41 @@ async function loadPrayerRequests() {
 }
 
 function renderPrayerRequests(requests) {
-  if (!requests.length) { prayerGrid.innerHTML = `<div class="empty">No prayer requests are currently posted. When online submissions reopen, new requests will appear here. You may also email ${PRAYER_EMAIL}.</div>`; return; }
+  if (!requests.length) {
+    const message = wallFilter === "answered" ? "No answered prayers are shown yet. When someone marks a request answered, it will appear here." : wallFilter === "open" ? "No open prayer requests are currently shown." : `No prayer requests are currently posted. When online submissions reopen, new requests will appear here. You may also email ${PRAYER_EMAIL}.`;
+    prayerGrid.innerHTML = `<div class="empty">${message}</div>`;
+    return;
+  }
+
   prayerGrid.innerHTML = requests.map((request) => {
     const createdDate = request.createdAt?.toDate ? request.createdAt.toDate().toLocaleDateString() : "Recently";
     const answeredClass = request.answered ? " answered" : "";
     const answeredTag = request.answered ? '<div class="tag answered-tag">Answered!</div>' : '';
-    const answeredButton = request.answered ? '<button class="btn btn-secondary btn-block answered-button" disabled>Answered!</button>' : `<button class="btn btn-secondary btn-block answered-button" data-id="${request.id}">Mark as Answered</button>`;
-    return `<article class="prayer-card${answeredClass}" data-card-id="${request.id}" tabindex="0"><div class="tag-row"><div class="tag">🙏 ${escapeHtml(request.category)}</div>${request.urgent ? '<div class="tag urgent">Urgent</div>' : ''}${answeredTag}</div><h3>${escapeHtml(request.title)}</h3><p>${escapeHtml(request.message)}</p><div class="card-footer"><div class="meta"><span>${createdDate}</span><span>${request.prayerCount || 0} prayed</span></div><div class="answered-help">${request.answered ? 'This prayer has been marked answered.' : 'Requester: click Mark as Answered and confirm with your email.'}</div><button class="btn btn-primary btn-block pray-button" data-id="${request.id}">Pray For This Request</button>${answeredButton}<button class="btn btn-secondary btn-block report-button" data-id="${request.id}">Report Request</button></div></article>`;
+    const urgentTag = request.urgent ? '<div class="tag urgent">Urgent</div>' : '';
+    const testimony = request.answered && request.answeredTestimony ? `<div class="answered-testimony"><strong>Answered Update</strong><p>${escapeHtml(request.answeredTestimony)}</p></div>` : "";
+    const answeredAction = request.answered ? `<div class="answered-praise">Praise God. This prayer has been marked answered.</div>` : `<button class="answered-link" data-id="${request.id}">Is this your request? Mark it answered</button>`;
+
+    return `<article class="prayer-card${answeredClass}" data-card-id="${request.id}" tabindex="0">
+      <div class="tag-row"><div class="tag">🙏 ${escapeHtml(request.category)}</div>${urgentTag}${answeredTag}</div>
+      <h3>${escapeHtml(request.title)}</h3>
+      <p>${escapeHtml(request.message)}</p>
+      ${testimony}
+      <div class="card-footer">
+        <div class="meta"><span>${createdDate}</span><span>${request.prayerCount || 0} prayed</span></div>
+        <button class="btn btn-primary btn-block pray-button" data-id="${request.id}">Pray For This Request</button>
+        ${answeredAction}
+        <button class="report-link report-button" data-id="${request.id}">Report</button>
+      </div>
+    </article>`;
   }).join("");
-  attachCardAnswerHandlers(); attachPrayButtons(); attachReportButtons();
+
+  attachCardAnswerHandlers();
+  attachPrayButtons();
+  attachReportButtons();
 }
 
 function attachCardAnswerHandlers(){
-  document.querySelectorAll(".answered-button[data-id]").forEach((button)=>{
+  document.querySelectorAll(".answered-link[data-id]").forEach((button)=>{
     button.addEventListener("click",(event)=>{
       event.stopPropagation();
       openAnsweredModal(button.dataset.id);
@@ -100,20 +140,39 @@ function attachCardAnswerHandlers(){
   document.querySelectorAll(".prayer-card[data-card-id]").forEach((card)=>{
     card.addEventListener("click",(event)=>{
       if(event.target.closest("button")) return;
-      openAnsweredModal(card.dataset.cardId);
+      const request = allRequests.find((item)=>item.id === card.dataset.cardId);
+      if(request && !request.answered) openAnsweredModal(card.dataset.cardId);
     });
-
     card.addEventListener("keydown",(event)=>{
       if(event.key !== "Enter" && event.key !== " ") return;
       if(event.target.closest("button")) return;
       event.preventDefault();
-      openAnsweredModal(card.dataset.cardId);
+      const request = allRequests.find((item)=>item.id === card.dataset.cardId);
+      if(request && !request.answered) openAnsweredModal(card.dataset.cardId);
+    });
+  });
+}
+
+function createWallFilterButtons(){
+  const toolbar = document.querySelector(".toolbar");
+  if(!toolbar || document.getElementById("wallAnsweredFilters")) return;
+  const filterWrap = document.createElement("div");
+  filterWrap.id = "wallAnsweredFilters";
+  filterWrap.className = "wall-filter-tabs";
+  filterWrap.innerHTML = `<button class="wall-filter active" data-wall-filter="all">All Requests</button><button class="wall-filter" data-wall-filter="open">Open Requests</button><button class="wall-filter" data-wall-filter="answered">Answered Prayers</button>`;
+  toolbar.prepend(filterWrap);
+  filterWrap.querySelectorAll("[data-wall-filter]").forEach((button)=>{
+    button.addEventListener("click",()=>{
+      wallFilter = button.dataset.wallFilter;
+      filterWrap.querySelectorAll(".wall-filter").forEach((item)=>item.classList.remove("active"));
+      button.classList.add("active");
+      filterRequests();
     });
   });
 }
 
 function createAnsweredModal(){
-  injectAnsweredModalStyles();
+  if(document.getElementById("answeredModal")) return;
   const modal = document.createElement("div");
   modal.id = "answeredModal";
   modal.className = "answered-modal";
@@ -124,19 +183,22 @@ function createAnsweredModal(){
       <button class="answered-modal-close" type="button" data-close-answered aria-label="Close">×</button>
       <div class="eyebrow">Answered Prayer</div>
       <h2 id="answeredModalTitle">Mark this prayer as answered.</h2>
-      <p id="answeredModalDescription">Enter the same email you used when submitting this prayer request. This helps make sure only the requester can mark it answered.</p>
+      <p>Enter the email you used when submitting this prayer request and the private answer code you received after submitting.</p>
       <div class="answered-modal-request" id="answeredModalRequest"></div>
       <label class="answered-modal-label" for="answeredEmailInput">Requester Email</label>
       <input id="answeredEmailInput" type="email" placeholder="you@example.com" autocomplete="email">
+      <label class="answered-modal-label" for="answeredCodeInput">Private Answer Code</label>
+      <input id="answeredCodeInput" type="text" placeholder="Example: A7K9-PQ2M" autocomplete="off">
+      <label class="answered-modal-label" for="answeredTestimonyInput">How was this prayer answered? Optional</label>
+      <textarea id="answeredTestimonyInput" rows="4" maxlength="500" placeholder="Example: God gave me peace, opened a door, or helped the situation begin to change."></textarea>
       <div class="answered-modal-notice" id="answeredModalNotice"></div>
       <button class="btn btn-primary btn-block" id="confirmAnsweredBtn" type="button">Mark Answered</button>
     </section>
   `;
   document.body.appendChild(modal);
-
   modal.querySelectorAll("[data-close-answered]").forEach((item)=>item.addEventListener("click", closeAnsweredModal));
   document.getElementById("confirmAnsweredBtn")?.addEventListener("click", confirmAnsweredPrayer);
-  document.getElementById("answeredEmailInput")?.addEventListener("keydown",(event)=>{ if(event.key === "Enter") confirmAnsweredPrayer(); });
+  ["answeredEmailInput","answeredCodeInput"].forEach((id)=>document.getElementById(id)?.addEventListener("keydown",(event)=>{ if(event.key === "Enter") confirmAnsweredPrayer(); }));
   document.addEventListener("keydown",(event)=>{ if(event.key === "Escape") closeAnsweredModal(); });
 }
 
@@ -145,7 +207,7 @@ function injectAnsweredModalStyles(){
   const style = document.createElement("style");
   style.id = "answeredModalRuntimeStyles";
   style.textContent = `
-    .answered-modal{position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;padding:24px}.answered-modal.show{display:flex!important}.answered-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(12px)}.answered-modal-card{position:relative;width:min(540px,100%);padding:30px;border-radius:34px;background:linear-gradient(180deg,rgba(18,16,14,.98),rgba(5,5,5,.98));border:1px solid rgba(216,195,165,.2);box-shadow:0 35px 120px rgba(0,0,0,.82);color:var(--text,#f7f2ea)}.answered-modal-card h2{font-family:"Playfair Display",Georgia,serif;font-size:42px;line-height:1;letter-spacing:-.04em;margin:18px 0 12px}.answered-modal-card p{color:var(--muted,#c9beb0);line-height:1.75}.answered-modal-close{position:absolute;right:18px;top:18px;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:var(--text,#f7f2ea);font-size:24px;cursor:pointer}.answered-modal-request{display:grid;gap:8px;margin:18px 0;padding:18px;border-radius:20px;background:rgba(216,195,165,.06);border:1px solid rgba(216,195,165,.14)}.answered-modal-request strong{color:var(--warm2,#fff0d2)}.answered-modal-request span{color:var(--muted,#c9beb0);line-height:1.65}.answered-modal-label{display:block;margin:14px 0 8px;color:var(--muted,#c9beb0);font-size:13px;font-weight:900}.answered-modal-notice{min-height:22px;margin:14px 0;color:var(--soft,#91877b);font-size:14px;line-height:1.55}.answered-modal-notice.error{color:var(--danger,#ffd1d1)}.answered-modal-notice.success{color:var(--green,#9ff2b3)}body.answered-modal-open{overflow:hidden}@media(max-width:760px){.answered-modal-card{padding:24px}.answered-modal-card h2{font-size:34px}}
+    .wall-filter-tabs{display:flex;gap:8px;flex-wrap:wrap;width:100%;margin-bottom:2px}.wall-filter{border:1px solid rgba(216,195,165,.18);background:rgba(255,255,255,.045);color:var(--muted,#c9beb0);border-radius:999px;padding:12px 15px;font-weight:900;cursor:pointer}.wall-filter.active{background:linear-gradient(135deg,var(--warm2,#fff0d2),var(--warm,#d8c3a5));color:#000}.answered{border-color:rgba(159,242,179,.42)!important;background:linear-gradient(180deg,rgba(35,128,61,.24),rgba(255,255,255,.04))!important;box-shadow:0 30px 90px rgba(31,122,58,.18)!important}.answered-tag{background:rgba(159,242,179,.14)!important;color:var(--green,#9ff2b3)!important;border-color:rgba(159,242,179,.28)!important}.answered-link,.report-link{border:0;background:transparent;color:var(--soft,#91877b);font-weight:900;cursor:pointer;text-align:center;padding:4px 8px}.answered-link{color:var(--warm2,#fff0d2)}.answered-link:hover,.report-link:hover{text-decoration:underline}.answered-praise{padding:12px 14px;border-radius:18px;background:rgba(159,242,179,.1);border:1px solid rgba(159,242,179,.18);color:var(--green,#9ff2b3);font-size:13px;font-weight:900;text-align:center}.answered-testimony{margin-top:2px;padding:16px;border-radius:20px;background:rgba(159,242,179,.08);border:1px solid rgba(159,242,179,.16)}.answered-testimony strong{color:var(--green,#9ff2b3);font-size:13px}.answered-testimony p{margin:8px 0 0!important}.answered-modal{position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;padding:24px}.answered-modal.show{display:flex!important}.answered-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(12px)}.answered-modal-card{position:relative;width:min(600px,100%);max-height:calc(100vh - 48px);overflow:auto;padding:30px;border-radius:34px;background:linear-gradient(180deg,rgba(18,16,14,.98),rgba(5,5,5,.98));border:1px solid rgba(216,195,165,.2);box-shadow:0 35px 120px rgba(0,0,0,.82);color:var(--text,#f7f2ea)}.answered-modal-card h2{font-family:"Playfair Display",Georgia,serif;font-size:42px;line-height:1;letter-spacing:-.04em;margin:18px 0 12px}.answered-modal-card p{color:var(--muted,#c9beb0);line-height:1.75}.answered-modal-close{position:absolute;right:18px;top:18px;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:var(--text,#f7f2ea);font-size:24px;cursor:pointer}.answered-modal-request{display:grid;gap:8px;margin:18px 0;padding:18px;border-radius:20px;background:rgba(216,195,165,.06);border:1px solid rgba(216,195,165,.14)}.answered-modal-request strong{color:var(--warm2,#fff0d2)}.answered-modal-request span{color:var(--muted,#c9beb0);line-height:1.65}.answered-modal-label{display:block;margin:14px 0 8px;color:var(--muted,#c9beb0);font-size:13px;font-weight:900}.answered-modal-notice{min-height:22px;margin:14px 0;color:var(--soft,#91877b);font-size:14px;line-height:1.55}.answered-modal-notice.error{color:var(--danger,#ffd1d1)}.answered-modal-notice.success{color:var(--green,#9ff2b3)}body.answered-modal-open{overflow:hidden}@media(max-width:760px){.answered-modal-card{padding:24px}.answered-modal-card h2{font-size:34px}}
   `;
   document.head.appendChild(style);
 }
@@ -153,21 +215,17 @@ function injectAnsweredModalStyles(){
 function openAnsweredModal(requestId){
   const prayerRequest = allRequests.find((request)=>request.id===requestId);
   if(!prayerRequest || prayerRequest.answered) return;
-
   selectedAnsweredRequest = prayerRequest;
+  document.getElementById("answeredModalRequest").innerHTML = `<strong>${escapeHtml(prayerRequest.title)}</strong><span>${escapeHtml(prayerRequest.message)}</span>`;
+  document.getElementById("answeredEmailInput").value = "";
+  document.getElementById("answeredCodeInput").value = "";
+  document.getElementById("answeredTestimonyInput").value = "";
+  showAnsweredNotice("", "");
   const modal = document.getElementById("answeredModal");
-  const requestBox = document.getElementById("answeredModalRequest");
-  const input = document.getElementById("answeredEmailInput");
-  const notice = document.getElementById("answeredModalNotice");
-
-  requestBox.innerHTML = `<strong>${escapeHtml(prayerRequest.title)}</strong><span>${escapeHtml(prayerRequest.message)}</span>`;
-  input.value = "";
-  notice.textContent = "";
-  notice.className = "answered-modal-notice";
   modal.style.display = "flex";
   modal.classList.add("show");
   document.body.classList.add("answered-modal-open");
-  setTimeout(()=>input.focus(),50);
+  setTimeout(()=>document.getElementById("answeredEmailInput").focus(),50);
 }
 
 function closeAnsweredModal(){
@@ -181,34 +239,28 @@ function closeAnsweredModal(){
 
 async function confirmAnsweredPrayer(){
   if(!selectedAnsweredRequest) return;
-
-  const input = document.getElementById("answeredEmailInput");
   const button = document.getElementById("confirmAnsweredBtn");
-  const enteredEmail = normalizeEmail(input.value);
+  const enteredEmail = normalizeEmail(document.getElementById("answeredEmailInput").value);
+  const enteredCode = normalizeCode(document.getElementById("answeredCodeInput").value);
   const savedEmail = normalizeEmail(selectedAnsweredRequest.email);
+  const testimony = document.getElementById("answeredTestimonyInput").value.trim().slice(0,500);
 
-  if(!enteredEmail){
-    showAnsweredNotice("Please enter the email used on this request.", "error");
-    return;
-  }
+  if(!enteredEmail) return showAnsweredNotice("Please enter the email used on this request.", "error");
+  if(enteredEmail !== savedEmail) return showAnsweredNotice("That email does not match this prayer request.", "error");
 
-  if(!savedEmail){
-    showAnsweredNotice("This request does not have an email saved, so it cannot be marked answered from the public page.", "error");
-    return;
-  }
-
-  if(enteredEmail !== savedEmail){
-    showAnsweredNotice("That email does not match this prayer request.", "error");
-    return;
+  if(selectedAnsweredRequest.answerCodeHash){
+    if(!enteredCode) return showAnsweredNotice("Please enter your private answer code.", "error");
+    const enteredHash = await hashText(enteredCode);
+    if(enteredHash !== selectedAnsweredRequest.answerCodeHash) return showAnsweredNotice("That answer code does not match this prayer request.", "error");
   }
 
   try{
     button.disabled = true;
     button.textContent = "Marking Answered...";
-    await updateDoc(doc(db,"prayer_requests",selectedAnsweredRequest.id),{answered:true,answeredAt:serverTimestamp(),updatedAt:serverTimestamp()});
-    showAnsweredNotice("This prayer request has been marked answered.", "success");
+    await updateDoc(doc(db,"prayer_requests",selectedAnsweredRequest.id),{answered:true,answeredAt:serverTimestamp(),answeredTestimony:testimony,updatedAt:serverTimestamp()});
+    showAnsweredNotice("Praise God. This prayer has been marked answered.", "success");
     await loadPrayerRequests();
-    setTimeout(closeAnsweredModal,900);
+    setTimeout(closeAnsweredModal,1000);
   }catch(error){
     console.error("Answered update failed:", error);
     showAnsweredNotice("This could not be marked answered. Check Firestore rules for answered updates.", "error");
@@ -221,7 +273,7 @@ async function confirmAnsweredPrayer(){
 function showAnsweredNotice(message,type){
   const notice = document.getElementById("answeredModalNotice");
   notice.textContent = message;
-  notice.className = `answered-modal-notice ${type}`;
+  notice.className = type ? `answered-modal-notice ${type}` : "answered-modal-notice";
 }
 
 function attachPrayButtons(){
@@ -253,13 +305,26 @@ function attachPrayButtons(){
   });
 }
 
-function attachReportButtons(){ document.querySelectorAll(".report-button").forEach((button)=>{ button.addEventListener("click",async()=>{ const requestId=button.dataset.id; const reason=prompt("Why are you reporting this request?"); if(!reason||!reason.trim())return; try{ button.disabled=true; button.textContent="Reporting..."; await addDoc(collection(db,"reports"),{requestId,reason:reason.trim(),createdAt:serverTimestamp(),status:"open"}); await updateDoc(doc(db,"prayer_requests",requestId),{reportCount:increment(1),status:"reported",updatedAt:serverTimestamp()}); button.textContent="Reported and Hidden"; await loadPrayerRequests(); }catch(error){ console.error(error); button.textContent="Report Failed"; setTimeout(()=>{button.textContent="Report Request";button.disabled=false;},2200); } }); }); }
+function attachReportButtons(){ document.querySelectorAll(".report-button").forEach((button)=>{ button.addEventListener("click",async()=>{ const requestId=button.dataset.id; const reason=prompt("Why are you reporting this request?"); if(!reason||!reason.trim())return; try{ button.disabled=true; button.textContent="Reporting..."; await addDoc(collection(db,"reports"),{requestId,reason:reason.trim(),createdAt:serverTimestamp(),status:"open"}); await updateDoc(doc(db,"prayer_requests",requestId),{reportCount:increment(1),status:"reported",updatedAt:serverTimestamp()}); button.textContent="Reported"; await loadPrayerRequests(); }catch(error){ console.error(error); button.textContent="Report Failed"; setTimeout(()=>{button.textContent="Report";button.disabled=false;},2200); } }); }); }
 searchInput?.addEventListener("input", filterRequests); categoryFilter?.addEventListener("change", filterRequests);
-function filterRequests(){ const searchValue=searchInput.value.toLowerCase().trim(); const categoryValue=categoryFilter.value; const filteredRequests=allRequests.filter((request)=>{ const matchesSearch=request.title.toLowerCase().includes(searchValue)||request.message.toLowerCase().includes(searchValue)||(request.answered&&"answered".includes(searchValue)); const matchesCategory=categoryValue==="all"||request.category===categoryValue; return matchesSearch&&matchesCategory;}); renderPrayerRequests(filteredRequests); }
+function filterRequests(){
+  const searchValue=(searchInput?.value||"").toLowerCase().trim();
+  const categoryValue=categoryFilter?.value||"all";
+  const filteredRequests=allRequests.filter((request)=>{
+    const matchesSearch=String(request.title||"").toLowerCase().includes(searchValue)||String(request.message||"").toLowerCase().includes(searchValue)||String(request.answeredTestimony||"").toLowerCase().includes(searchValue)||(request.answered&&"answered".includes(searchValue));
+    const matchesCategory=categoryValue==="all"||request.category===categoryValue;
+    const matchesWallFilter=wallFilter==="all"||(wallFilter==="open"&&!request.answered)||(wallFilter==="answered"&&request.answered);
+    return matchesSearch&&matchesCategory&&matchesWallFilter;
+  });
+  renderPrayerRequests(filteredRequests);
+}
 function updateStatistics(){ totalRequestsElement.textContent=allRequests.length; totalPrayersElement.textContent=allRequests.reduce((sum,request)=>sum+(request.prayerCount||0),0); urgentRequestsElement.textContent=allRequests.filter((request)=>request.urgent).length; }
 function showNotice(message,type="success",duration=7000){ formNotice.textContent=message; formNotice.className=`notice show ${type}`; setTimeout(()=>{ if(submissionsOpen || type !== "error") formNotice.className="notice"; },duration); }
 function escapeHtml(text=""){ return String(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#039;"); }
 function normalizeEmail(email=""){ return String(email).trim().toLowerCase(); }
+function normalizeCode(code=""){ return String(code).trim().toUpperCase().replace(/\s+/g,""); }
+function generateAnswerCode(){ const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let code=""; const values=new Uint32Array(8); crypto.getRandomValues(values); values.forEach((value,index)=>{ code += chars[value % chars.length]; if(index===3) code += "-"; }); return code; }
+async function hashText(text){ const encoded=new TextEncoder().encode(normalizeCode(text)); const digest=await crypto.subtle.digest("SHA-256",encoded); return Array.from(new Uint8Array(digest)).map((byte)=>byte.toString(16).padStart(2,"0")).join(""); }
 function getTime(timestamp){ return timestamp?.toDate ? timestamp.toDate().getTime() : 0; }
 
 await loadSubmissionSettings();
