@@ -113,9 +113,11 @@ function attachCardAnswerHandlers(){
 }
 
 function createAnsweredModal(){
+  injectAnsweredModalStyles();
   const modal = document.createElement("div");
   modal.id = "answeredModal";
   modal.className = "answered-modal";
+  modal.style.display = "none";
   modal.innerHTML = `
     <div class="answered-modal-backdrop" data-close-answered></div>
     <section class="answered-modal-card" role="dialog" aria-modal="true" aria-labelledby="answeredModalTitle">
@@ -138,6 +140,16 @@ function createAnsweredModal(){
   document.addEventListener("keydown",(event)=>{ if(event.key === "Escape") closeAnsweredModal(); });
 }
 
+function injectAnsweredModalStyles(){
+  if(document.getElementById("answeredModalRuntimeStyles")) return;
+  const style = document.createElement("style");
+  style.id = "answeredModalRuntimeStyles";
+  style.textContent = `
+    .answered-modal{position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;padding:24px}.answered-modal.show{display:flex!important}.answered-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(12px)}.answered-modal-card{position:relative;width:min(540px,100%);padding:30px;border-radius:34px;background:linear-gradient(180deg,rgba(18,16,14,.98),rgba(5,5,5,.98));border:1px solid rgba(216,195,165,.2);box-shadow:0 35px 120px rgba(0,0,0,.82);color:var(--text,#f7f2ea)}.answered-modal-card h2{font-family:"Playfair Display",Georgia,serif;font-size:42px;line-height:1;letter-spacing:-.04em;margin:18px 0 12px}.answered-modal-card p{color:var(--muted,#c9beb0);line-height:1.75}.answered-modal-close{position:absolute;right:18px;top:18px;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:var(--text,#f7f2ea);font-size:24px;cursor:pointer}.answered-modal-request{display:grid;gap:8px;margin:18px 0;padding:18px;border-radius:20px;background:rgba(216,195,165,.06);border:1px solid rgba(216,195,165,.14)}.answered-modal-request strong{color:var(--warm2,#fff0d2)}.answered-modal-request span{color:var(--muted,#c9beb0);line-height:1.65}.answered-modal-label{display:block;margin:14px 0 8px;color:var(--muted,#c9beb0);font-size:13px;font-weight:900}.answered-modal-notice{min-height:22px;margin:14px 0;color:var(--soft,#91877b);font-size:14px;line-height:1.55}.answered-modal-notice.error{color:var(--danger,#ffd1d1)}.answered-modal-notice.success{color:var(--green,#9ff2b3)}body.answered-modal-open{overflow:hidden}@media(max-width:760px){.answered-modal-card{padding:24px}.answered-modal-card h2{font-size:34px}}
+  `;
+  document.head.appendChild(style);
+}
+
 function openAnsweredModal(requestId){
   const prayerRequest = allRequests.find((request)=>request.id===requestId);
   if(!prayerRequest || prayerRequest.answered) return;
@@ -152,7 +164,9 @@ function openAnsweredModal(requestId){
   input.value = "";
   notice.textContent = "";
   notice.className = "answered-modal-notice";
+  modal.style.display = "flex";
   modal.classList.add("show");
+  document.body.classList.add("answered-modal-open");
   setTimeout(()=>input.focus(),50);
 }
 
@@ -160,6 +174,8 @@ function closeAnsweredModal(){
   const modal = document.getElementById("answeredModal");
   if(!modal) return;
   modal.classList.remove("show");
+  modal.style.display = "none";
+  document.body.classList.remove("answered-modal-open");
   selectedAnsweredRequest = null;
 }
 
@@ -167,7 +183,6 @@ async function confirmAnsweredPrayer(){
   if(!selectedAnsweredRequest) return;
 
   const input = document.getElementById("answeredEmailInput");
-  const notice = document.getElementById("answeredModalNotice");
   const button = document.getElementById("confirmAnsweredBtn");
   const enteredEmail = normalizeEmail(input.value);
   const savedEmail = normalizeEmail(selectedAnsweredRequest.email);
