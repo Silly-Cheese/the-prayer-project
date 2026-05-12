@@ -3,14 +3,59 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function signedIn() {
+      return request.auth != null;
+    }
+
     match /prayer_requests/{requestId} {
+      allow read: if resource.data.status == 'approved' || signedIn();
+
+      allow create: if request.resource.data.title is string
+        && request.resource.data.message is string
+        && request.resource.data.email is string
+        && request.resource.data.category is string
+        && request.resource.data.urgent is bool
+        && request.resource.data.prayerCount == 0
+        && request.resource.data.reportCount == 0
+        && request.resource.data.status == 'approved';
+
+      allow update: if signedIn()
+        || (
+          resource.data.status == 'approved'
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['prayerCount', 'updatedAt'])
+          && request.resource.data.prayerCount == resource.data.prayerCount + 1
+        )
+        || (
+          resource.data.status == 'approved'
+          && request.resource.data.status == 'reported'
+          && request.resource.data.reportCount == resource.data.reportCount + 1
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['reportCount', 'status', 'updatedAt'])
+        )
+        || (
+          resource.data.status == 'approved'
+          && resource.data.answered != true
+          && request.resource.data.answered == true
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['answered', 'answeredAt', 'updatedAt'])
+        );
+
+      allow delete: if signedIn();
+    }
+
+    match /reports/{reportId} {
+      allow read: if signedIn();
+      allow create: if request.resource.data.requestId is string
+        && request.resource.data.reason is string
+        && request.resource.data.status == 'open';
+      allow update, delete: if signedIn();
+    }
+
+    match /settings/{settingId} {
       allow read: if true;
+      allow create, update, delete: if signedIn();
+    }
 
-      allow create: if true;
-
-      allow update: if true;
-
-      allow delete: if false;
+    match /admins/{adminId} {
+      allow read, write: if signedIn();
     }
 
     match /{document=**} {
