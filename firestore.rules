@@ -18,7 +18,6 @@ service cloud.firestore {
         && request.resource.data.prayerCount == 0
         && request.resource.data.reportCount == 0
         && request.resource.data.answered == false
-        && request.resource.data.answerCodeHash is string
         && request.resource.data.status == 'approved';
 
       allow update: if signedIn()
