@@ -72,7 +72,9 @@ function renderRequests(){
       String(r.title || "").toLowerCase().includes(term) ||
       String(r.message || "").toLowerCase().includes(term) ||
       String(r.category || "").toLowerCase().includes(term) ||
-      String(r.email || "").toLowerCase().includes(term)
+      String(r.email || "").toLowerCase().includes(term) ||
+      String(r.answeredTestimony || "").toLowerCase().includes(term) ||
+      (r.answered && "answered".includes(term))
     );
   }
 
@@ -83,25 +85,28 @@ function renderRequests(){
 
   adminRequests.innerHTML = visible.map(r=>{
     const date = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString() : "Recently";
+    const answeredDate = r.answeredAt?.toDate ? r.answeredAt.toDate().toLocaleString() : "Not answered";
     const matchingReports = reports.filter(x=>x.requestId===r.id);
     const status = r.status || "approved";
-    return `<article class="request">
-      <h3>${esc(r.title)}</h3>
+    return `<article class="request ${r.answered ? 'answered-admin' : ''}">
+      <h3>${esc(r.title)} ${r.answered ? '<span class="answered-pill">Answered!</span>' : ''}</h3>
       <p>${esc(r.message)}</p>
       <div class="meta">
         <span>Status: ${esc(status)}</span>
         <span>Category: ${esc(r.category)}</span>
         <span>Prayers: ${r.prayerCount||0}</span>
         <span>Reports: ${matchingReports.length}</span>
-        <span>${date}</span>
+        <span>Submitted: ${date}</span>
         ${r.urgent?'<span>Urgent</span>':''}
       </div>
-      <div class="meta"><span>Email: ${esc(r.email || "No email saved")}</span></div>
+      <div class="meta"><span>Email: ${esc(r.email || "No email saved")}</span><span>Answered: ${r.answered ? answeredDate : 'No'}</span><span>Answer Code: ${r.answerCodeHash ? 'Enabled' : 'Legacy email-only'}</span></div>
+      ${r.answeredTestimony?`<div class="reportbox answered-box"><strong>Answered Testimony</strong><p>${esc(r.answeredTestimony)}</p></div>`:""}
       ${matchingReports.length?`<div class="reportbox"><strong>Reports</strong>${matchingReports.map(x=>`<p>${esc(x.reason)}</p>`).join("")}</div>`:""}
       <div class="toolbar">
         <button class="btn approve" data-action="approved" data-id="${r.id}">Return to Wall</button>
         <button class="btn warn" data-action="reported" data-id="${r.id}">Keep Reported</button>
         <button class="btn delete" data-action="removed" data-id="${r.id}">Remove</button>
+        ${r.answered ? `<button class="btn neutral undo-answered" data-id="${r.id}">Undo Answered</button>` : `<button class="btn approve mark-answered" data-id="${r.id}">Mark Answered</button>`}
         <button class="btn delete hard-delete" data-id="${r.id}">Delete</button>
       </div>
     </article>`;
@@ -109,10 +114,18 @@ function renderRequests(){
 
   document.querySelectorAll("[data-action]").forEach(b=>b.addEventListener("click",()=>setStatus(b.dataset.id,b.dataset.action)));
   document.querySelectorAll(".hard-delete").forEach(b=>b.addEventListener("click",()=>hardDelete(b.dataset.id)));
+  document.querySelectorAll(".undo-answered").forEach(b=>b.addEventListener("click",()=>setAnswered(b.dataset.id,false)));
+  document.querySelectorAll(".mark-answered").forEach(b=>b.addEventListener("click",()=>setAnswered(b.dataset.id,true)));
 }
 
 async function setStatus(id,status){
   await updateDoc(doc(db,"prayer_requests",id),{status,updatedAt:serverTimestamp()});
+  await loadDashboard();
+}
+
+async function setAnswered(id,answered){
+  const update = answered ? {answered:true,answeredAt:serverTimestamp(),updatedAt:serverTimestamp()} : {answered:false,answeredTestimony:"",updatedAt:serverTimestamp()};
+  await updateDoc(doc(db,"prayer_requests",id),update);
   await loadDashboard();
 }
 
@@ -126,7 +139,7 @@ function updateStatistics(){
   requestCount.textContent=requests.length;
   prayerCount.textContent=requests.reduce((s,r)=>s+(r.prayerCount||0),0);
   urgentCount.textContent=requests.filter(r=>r.urgent).length;
-  emailCount.textContent=requests.reduce((s,r)=>s+(r.prayerCount||0),0);
+  emailCount.textContent=requests.filter(r=>r.answered).length;
 }
 
 async function loadSettings(){
