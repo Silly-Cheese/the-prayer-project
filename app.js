@@ -32,8 +32,6 @@ prayerForm?.addEventListener("submit", async (event) => {
     submitBtn.textContent = "Submitting Prayer Request...";
 
     const email = document.getElementById("email").value.trim();
-    const answerCode = generateAnswerCode();
-    const answerCodeHash = await hashText(answerCode);
     const publicRequest = {
       title: document.getElementById("title").value.trim(),
       category: document.getElementById("category").value,
@@ -43,14 +41,13 @@ prayerForm?.addEventListener("submit", async (event) => {
       prayerCount: 0,
       reportCount: 0,
       answered: false,
-      answerCodeHash,
       status: "approved",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
 
     await addDoc(collection(db, "prayer_requests"), publicRequest);
-    showNotice(`Your prayer request has been posted. Save this private answer code so you can mark the request answered later: ${answerCode}`, "success", 30000);
+    showNotice("Your prayer request has been posted. People can now pray for you.", "success");
     prayerForm.reset();
     await loadPrayerRequests();
   } catch (error) {
@@ -183,12 +180,10 @@ function createAnsweredModal(){
       <button class="answered-modal-close" type="button" data-close-answered aria-label="Close">×</button>
       <div class="eyebrow">Answered Prayer</div>
       <h2 id="answeredModalTitle">Mark this prayer as answered.</h2>
-      <p>Enter the email you used when submitting this prayer request and the private answer code you received after submitting.</p>
+      <p>Enter the same email you used when submitting this prayer request. This helps make sure only the requester can mark it answered.</p>
       <div class="answered-modal-request" id="answeredModalRequest"></div>
       <label class="answered-modal-label" for="answeredEmailInput">Requester Email</label>
       <input id="answeredEmailInput" type="email" placeholder="you@example.com" autocomplete="email">
-      <label class="answered-modal-label" for="answeredCodeInput">Private Answer Code</label>
-      <input id="answeredCodeInput" type="text" placeholder="Example: A7K9-PQ2M" autocomplete="off">
       <label class="answered-modal-label" for="answeredTestimonyInput">How was this prayer answered? Optional</label>
       <textarea id="answeredTestimonyInput" rows="4" maxlength="500" placeholder="Example: God gave me peace, opened a door, or helped the situation begin to change."></textarea>
       <div class="answered-modal-notice" id="answeredModalNotice"></div>
@@ -198,7 +193,7 @@ function createAnsweredModal(){
   document.body.appendChild(modal);
   modal.querySelectorAll("[data-close-answered]").forEach((item)=>item.addEventListener("click", closeAnsweredModal));
   document.getElementById("confirmAnsweredBtn")?.addEventListener("click", confirmAnsweredPrayer);
-  ["answeredEmailInput","answeredCodeInput"].forEach((id)=>document.getElementById(id)?.addEventListener("keydown",(event)=>{ if(event.key === "Enter") confirmAnsweredPrayer(); }));
+  document.getElementById("answeredEmailInput")?.addEventListener("keydown",(event)=>{ if(event.key === "Enter") confirmAnsweredPrayer(); });
   document.addEventListener("keydown",(event)=>{ if(event.key === "Escape") closeAnsweredModal(); });
 }
 
@@ -218,7 +213,6 @@ function openAnsweredModal(requestId){
   selectedAnsweredRequest = prayerRequest;
   document.getElementById("answeredModalRequest").innerHTML = `<strong>${escapeHtml(prayerRequest.title)}</strong><span>${escapeHtml(prayerRequest.message)}</span>`;
   document.getElementById("answeredEmailInput").value = "";
-  document.getElementById("answeredCodeInput").value = "";
   document.getElementById("answeredTestimonyInput").value = "";
   showAnsweredNotice("", "");
   const modal = document.getElementById("answeredModal");
@@ -241,18 +235,11 @@ async function confirmAnsweredPrayer(){
   if(!selectedAnsweredRequest) return;
   const button = document.getElementById("confirmAnsweredBtn");
   const enteredEmail = normalizeEmail(document.getElementById("answeredEmailInput").value);
-  const enteredCode = normalizeCode(document.getElementById("answeredCodeInput").value);
   const savedEmail = normalizeEmail(selectedAnsweredRequest.email);
   const testimony = document.getElementById("answeredTestimonyInput").value.trim().slice(0,500);
 
   if(!enteredEmail) return showAnsweredNotice("Please enter the email used on this request.", "error");
   if(enteredEmail !== savedEmail) return showAnsweredNotice("That email does not match this prayer request.", "error");
-
-  if(selectedAnsweredRequest.answerCodeHash){
-    if(!enteredCode) return showAnsweredNotice("Please enter your private answer code.", "error");
-    const enteredHash = await hashText(enteredCode);
-    if(enteredHash !== selectedAnsweredRequest.answerCodeHash) return showAnsweredNotice("That answer code does not match this prayer request.", "error");
-  }
 
   try{
     button.disabled = true;
@@ -322,9 +309,6 @@ function updateStatistics(){ totalRequestsElement.textContent=allRequests.length
 function showNotice(message,type="success",duration=7000){ formNotice.textContent=message; formNotice.className=`notice show ${type}`; setTimeout(()=>{ if(submissionsOpen || type !== "error") formNotice.className="notice"; },duration); }
 function escapeHtml(text=""){ return String(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#039;"); }
 function normalizeEmail(email=""){ return String(email).trim().toLowerCase(); }
-function normalizeCode(code=""){ return String(code).trim().toUpperCase().replace(/\s+/g,""); }
-function generateAnswerCode(){ const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let code=""; const values=new Uint32Array(8); crypto.getRandomValues(values); values.forEach((value,index)=>{ code += chars[value % chars.length]; if(index===3) code += "-"; }); return code; }
-async function hashText(text){ const encoded=new TextEncoder().encode(normalizeCode(text)); const digest=await crypto.subtle.digest("SHA-256",encoded); return Array.from(new Uint8Array(digest)).map((byte)=>byte.toString(16).padStart(2,"0")).join(""); }
 function getTime(timestamp){ return timestamp?.toDate ? timestamp.toDate().getTime() : 0; }
 
 await loadSubmissionSettings();
