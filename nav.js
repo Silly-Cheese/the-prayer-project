@@ -13,28 +13,53 @@ document.addEventListener("DOMContentLoaded", () => {
     <a href="${wall}">Prayer Wall</a>
     <a class="nav-cta" href="${submit}">Submit</a>
     <div class="nav-menu">
-      <button class="nav-menu-btn" type="button">Learn ▾</button>
-      <div class="nav-mobile-label">Learn</div>
+      <button class="nav-menu-btn" type="button" aria-expanded="false">Learn <span>▾</span></button>
       <div class="nav-menu-panel">
-        <a href="lords-prayer.html" data-page="lords-prayer.html">Lord's Prayer<span>How Jesus taught us to pray</span></a>
-        <a href="prayers.html" data-page="prayers.html">Prayers<span>Simple prayers for hard moments</span></a>
-        <a href="bible-story.html" data-page="bible-story.html">Bible Story<span>Creation, fall, redemption, and hope</span></a>
-        <a href="about.html" data-page="about.html">About<span>The purpose of The Prayer Project</span></a>
+        <a href="lords-prayer.html" data-page="lords-prayer.html"><strong>Lord's Prayer</strong><span>How Jesus taught us to pray</span></a>
+        <a href="prayers.html" data-page="prayers.html"><strong>Prayers</strong><span>Simple prayers for hard moments</span></a>
+        <a href="bible-story.html" data-page="bible-story.html"><strong>Bible Story</strong><span>Creation, fall, redemption, and hope</span></a>
+        <a href="about.html" data-page="about.html"><strong>About</strong><span>The purpose of The Prayer Project</span></a>
       </div>
     </div>
     <div class="nav-menu">
-      <button class="nav-menu-btn" type="button">Support ▾</button>
-      <div class="nav-mobile-label">Support</div>
+      <button class="nav-menu-btn" type="button" aria-expanded="false">Support <span>▾</span></button>
       <div class="nav-menu-panel">
-        <a class="nav-crisis" href="crisis.html" data-page="crisis.html">Crisis Help<span>Immediate help and support resources</span></a>
-        <a href="privacy.html" data-page="privacy.html">Privacy<span>How request information is handled</span></a>
-        <a href="terms.html" data-page="terms.html">Terms<span>Site rules and responsible use</span></a>
-        <a href="login.html" data-page="login.html">Admin<span>Protected moderation dashboard</span></a>
+        <a class="nav-crisis" href="crisis.html" data-page="crisis.html"><strong>Crisis Help</strong><span>Immediate help and support resources</span></a>
+        <a href="privacy.html" data-page="privacy.html"><strong>Privacy</strong><span>How request information is handled</span></a>
+        <a href="terms.html" data-page="terms.html"><strong>Terms</strong><span>Site rules and responsible use</span></a>
+        <a href="login.html" data-page="login.html"><strong>Admin</strong><span>Protected moderation dashboard</span></a>
       </div>
     </div>
   `;
 
   navLinks.querySelectorAll("[data-page]").forEach((link) => {
     if (link.dataset.page === path) link.classList.add("active");
+  });
+
+  navLinks.querySelectorAll(".nav-menu-btn").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const menu = button.closest(".nav-menu");
+      const isOpen = menu.classList.contains("open");
+
+      navLinks.querySelectorAll(".nav-menu.open").forEach((openMenu) => {
+        openMenu.classList.remove("open");
+        openMenu.querySelector(".nav-menu-btn")?.setAttribute("aria-expanded", "false");
+      });
+
+      if (!isOpen) {
+        menu.classList.add("open");
+        button.setAttribute("aria-expanded", "true");
+      }
+    });
+  });
+
+  document.addEventListener("click", (event) => {
+    if (event.target.closest(".nav-menu")) return;
+    navLinks.querySelectorAll(".nav-menu.open").forEach((openMenu) => {
+      openMenu.classList.remove("open");
+      openMenu.querySelector(".nav-menu-btn")?.setAttribute("aria-expanded", "false");
+    });
   });
 });
