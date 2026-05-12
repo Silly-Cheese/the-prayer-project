@@ -17,6 +17,8 @@ service cloud.firestore {
         && request.resource.data.urgent is bool
         && request.resource.data.prayerCount == 0
         && request.resource.data.reportCount == 0
+        && request.resource.data.answered == false
+        && request.resource.data.answerCodeHash is string
         && request.resource.data.status == 'approved';
 
       allow update: if signedIn()
@@ -35,7 +37,8 @@ service cloud.firestore {
           resource.data.status == 'approved'
           && resource.data.answered != true
           && request.resource.data.answered == true
-          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['answered', 'answeredAt', 'updatedAt'])
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['answered', 'answeredAt', 'answeredTestimony', 'updatedAt'])
+          && (!('answeredTestimony' in request.resource.data) || request.resource.data.answeredTestimony is string)
         );
 
       allow delete: if signedIn();
