@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
 
     <div class="nav-group">
-      <div class="nav-group-title">Learn</div>
+      <button class="nav-group-title" type="button" aria-expanded="false">Learn <span>▾</span></button>
       <div class="nav-group-grid">
         <a href="lords-prayer.html" data-page="lords-prayer.html"><strong>Lord's Prayer</strong><span>How Jesus taught us to pray</span></a>
         <a href="prayers.html" data-page="prayers.html"><strong>Prayers</strong><span>Simple prayers for hard moments</span></a>
@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
 
     <div class="nav-group">
-      <div class="nav-group-title">Support</div>
+      <button class="nav-group-title" type="button" aria-expanded="false">Support <span>▾</span></button>
       <div class="nav-group-grid">
         <a class="nav-crisis" href="crisis.html" data-page="crisis.html"><strong>Crisis Help</strong><span>Immediate help and support resources</span></a>
         <a href="privacy.html" data-page="privacy.html"><strong>Privacy</strong><span>How request information is handled</span></a>
@@ -52,11 +52,20 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   const toggle = document.querySelector(".nav-toggle");
+
+  const closeDesktopDropdowns = () => {
+    navLinks.querySelectorAll(".nav-group.open").forEach((group) => {
+      group.classList.remove("open");
+      group.querySelector(".nav-group-title")?.setAttribute("aria-expanded", "false");
+    });
+  };
+
   const closeMenu = () => {
     navLinks.classList.remove("open");
     toggle?.classList.remove("open");
     toggle?.setAttribute("aria-expanded", "false");
     document.body.classList.remove("nav-open");
+    closeDesktopDropdowns();
   };
 
   toggle?.addEventListener("click", () => {
@@ -64,9 +73,32 @@ document.addEventListener("DOMContentLoaded", () => {
     toggle.classList.toggle("open", isOpen);
     toggle.setAttribute("aria-expanded", String(isOpen));
     document.body.classList.toggle("nav-open", isOpen);
+    closeDesktopDropdowns();
+  });
+
+  navLinks.querySelectorAll(".nav-group-title").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const group = button.closest(".nav-group");
+      const isOpen = group.classList.contains("open");
+
+      closeDesktopDropdowns();
+
+      if (!isOpen) {
+        group.classList.add("open");
+        button.setAttribute("aria-expanded", "true");
+      }
+    });
   });
 
   navLinks.querySelectorAll("a").forEach((link) => link.addEventListener("click", closeMenu));
+
+  document.addEventListener("click", (event) => {
+    if (event.target.closest(".nav-group")) return;
+    closeDesktopDropdowns();
+  });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeMenu();
