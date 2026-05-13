@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupLoader();
   setupPageTransitions();
   setupScrollAnimations();
+  setupFixedResourceSearch();
 
   const navLinks = document.querySelector(".nav-links");
   const navInner = document.querySelector(".nav-inner");
@@ -111,18 +112,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function setupLoader() {
   if (document.getElementById("siteLoader")) return;
-
   document.documentElement.classList.add("site-loading");
-
   const loader = createLoader("Preparing a quiet place to pray");
   document.body.prepend(loader);
-
   const hideLoader = () => {
     loader.classList.add("hide");
     document.documentElement.classList.remove("site-loading");
     setTimeout(() => loader.remove(), 650);
   };
-
   window.addEventListener("load", () => setTimeout(hideLoader, 350));
   setTimeout(hideLoader, 1800);
 }
@@ -131,17 +128,14 @@ function setupPageTransitions() {
   document.addEventListener("click", (event) => {
     const link = event.target.closest("a[href]");
     if (!link) return;
-
     const href = link.getAttribute("href");
     if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return;
     if (link.target === "_blank" || link.hasAttribute("download")) return;
-
     const destination = new URL(href, window.location.href);
     const current = new URL(window.location.href);
     const samePageAnchor = destination.pathname === current.pathname && destination.hash;
     if (samePageAnchor) return;
     if (destination.origin !== current.origin) return;
-
     event.preventDefault();
     showPageTransition(destination.href);
   });
@@ -155,7 +149,6 @@ function showPageTransition(url) {
     loader.classList.add("page-transition-loader");
     document.body.appendChild(loader);
   }
-
   document.documentElement.classList.add("site-loading");
   requestAnimationFrame(() => loader.classList.add("show"));
   setTimeout(() => { window.location.href = url; }, 420);
@@ -174,31 +167,38 @@ function createLoader(subtitle) {
   return loader;
 }
 
+function setupFixedResourceSearch() {
+  const tools = document.querySelector(".resource-tools");
+  const grid = document.querySelector("#resourceGrid");
+  if (!tools || !grid || document.getElementById("fixedResourceSearchStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "fixedResourceSearchStyles";
+  style.textContent = `
+    .resource-tools{
+      position:fixed!important;
+      top:86px!important;
+      left:50%!important;
+      transform:translateX(-50%)!important;
+      width:min(1160px,calc(100% - 38px))!important;
+      z-index:40!important;
+      margin:0!important;
+      box-shadow:0 22px 70px rgba(0,0,0,.62)!important;
+    }
+    #resourceGrid{margin-top:210px!important;}
+    @media(max-width:900px){
+      .resource-tools{top:78px!important;width:calc(100% - 24px)!important;padding:12px!important;border-radius:22px!important;}
+      .resource-tools .filter-tabs{max-height:92px;overflow:auto;padding-bottom:2px;}
+      .resource-tools .filter-btn{padding:9px 11px;font-size:11px;}
+      #resourceGrid{margin-top:340px!important;}
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 function setupScrollAnimations() {
   const animatedSelector = [
-    "main h1",
-    "main h2",
-    "main h3",
-    ".lead",
-    ".eyebrow",
-    ".hero-copy",
-    ".submit-card",
-    ".verse",
-    ".stat",
-    ".section-title",
-    ".toolbar",
-    ".prayer-card",
-    ".about-card",
-    ".card",
-    ".panel",
-    ".chapter",
-    ".prayer",
-    ".scripture-card",
-    ".summary-card",
-    ".note",
-    ".empty",
-    "form label",
-    "footer"
+    "main h1", "main h2", "main h3", ".lead", ".eyebrow", ".hero-copy", ".submit-card", ".verse", ".stat", ".section-title", ".toolbar", ".resource-tools", ".quick-card", ".urgent", ".prayer-card", ".about-card", ".card", ".panel", ".chapter", ".prayer", ".scripture-card", ".summary-card", ".note", ".empty", "form label", "footer"
   ].join(",");
 
   const seen = new WeakSet();
