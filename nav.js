@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   setupLoader();
+  setupPageTransitions();
   setupScrollAnimations();
 
   const navLinks = document.querySelector(".nav-links");
@@ -113,15 +114,7 @@ function setupLoader() {
 
   document.documentElement.classList.add("site-loading");
 
-  const loader = document.createElement("div");
-  loader.id = "siteLoader";
-  loader.className = "site-loader";
-  loader.innerHTML = `
-    <div class="loader-mark">✦</div>
-    <div class="loader-title">The Prayer Project</div>
-    <div class="loader-subtitle">Preparing a quiet place to pray</div>
-    <div class="loader-line"><span></span></div>
-  `;
+  const loader = createLoader("Preparing a quiet place to pray");
   document.body.prepend(loader);
 
   const hideLoader = () => {
@@ -134,8 +127,60 @@ function setupLoader() {
   setTimeout(hideLoader, 1800);
 }
 
+function setupPageTransitions() {
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("a[href]");
+    if (!link) return;
+
+    const href = link.getAttribute("href");
+    if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return;
+    if (link.target === "_blank" || link.hasAttribute("download")) return;
+
+    const destination = new URL(href, window.location.href);
+    const current = new URL(window.location.href);
+    const samePageAnchor = destination.pathname === current.pathname && destination.hash;
+    if (samePageAnchor) return;
+    if (destination.origin !== current.origin) return;
+
+    event.preventDefault();
+    showPageTransition(destination.href);
+  });
+}
+
+function showPageTransition(url) {
+  let loader = document.getElementById("pageTransitionLoader");
+  if (!loader) {
+    loader = createLoader("Opening the next page");
+    loader.id = "pageTransitionLoader";
+    loader.classList.add("page-transition-loader");
+    document.body.appendChild(loader);
+  }
+
+  document.documentElement.classList.add("site-loading");
+  requestAnimationFrame(() => loader.classList.add("show"));
+  setTimeout(() => { window.location.href = url; }, 420);
+}
+
+function createLoader(subtitle) {
+  const loader = document.createElement("div");
+  loader.id = "siteLoader";
+  loader.className = "site-loader";
+  loader.innerHTML = `
+    <div class="loader-mark">✦</div>
+    <div class="loader-title">The Prayer Project</div>
+    <div class="loader-subtitle">${subtitle}</div>
+    <div class="loader-line"><span></span></div>
+  `;
+  return loader;
+}
+
 function setupScrollAnimations() {
   const animatedSelector = [
+    "main h1",
+    "main h2",
+    "main h3",
+    ".lead",
+    ".eyebrow",
     ".hero-copy",
     ".submit-card",
     ".verse",
@@ -151,29 +196,49 @@ function setupScrollAnimations() {
     ".scripture-card",
     ".summary-card",
     ".note",
-    ".empty"
+    ".empty",
+    "form label",
+    "footer"
   ].join(",");
 
-  const elements = [...document.querySelectorAll(animatedSelector)]
-    .filter((element) => !element.closest(".nav") && !element.closest(".site-loader"));
+  const seen = new WeakSet();
+  let observer;
 
-  elements.forEach((element, index) => {
-    element.classList.add("reveal");
-    element.style.setProperty("--reveal-delay", `${Math.min(index % 6, 5) * 70}ms`);
-  });
+  const animateElements = (root = document) => {
+    const elements = [...root.querySelectorAll(animatedSelector)]
+      .filter((element) => !element.closest(".nav") && !element.closest(".site-loader") && !element.closest(".page-transition-loader"));
 
-  if (!("IntersectionObserver" in window)) {
-    elements.forEach((element) => element.classList.add("visible"));
-    return;
+    elements.forEach((element, index) => {
+      if (seen.has(element)) return;
+      seen.add(element);
+      element.classList.add("reveal");
+      element.style.setProperty("--reveal-delay", `${Math.min(index % 8, 7) * 55}ms`);
+      if (observer) observer.observe(element);
+      else element.classList.add("visible");
+    });
+  };
+
+  if ("IntersectionObserver" in window) {
+    observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("visible");
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.1, rootMargin: "0px 0px -35px 0px" });
   }
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      entry.target.classList.add("visible");
-      observer.unobserve(entry.target);
-    });
-  }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+  animateElements(document);
 
-  elements.forEach((element) => observer.observe(element));
+  const mutationObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (!(node instanceof Element)) return;
+        if (node.matches?.(animatedSelector)) animateElements(node.parentElement || document);
+        else animateElements(node);
+      });
+    });
+  });
+
+  mutationObserver.observe(document.body, { childList: true, subtree: true });
 }
