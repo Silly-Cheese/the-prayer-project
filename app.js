@@ -7,13 +7,22 @@ const db = getFirestore(app);
 const EMAIL_ENDPOINT = "https://script.google.com/macros/s/AKfycbxdmttZIR8nCYr_613OEpsH7p1OFO19sHOyW04tacpRHC05VUthelEPRCr9KcUQdE5xxw/exec";
 const PRAYER_EMAIL = "pray@ask4prayers.com";
 
-const prayerForm = document.getElementById("prayerForm"), prayerGrid = document.getElementById("prayerGrid"), formNotice = document.getElementById("formNotice"), submitBtn = document.getElementById("submitBtn"), searchInput = document.getElementById("searchInput"), categoryFilter = document.getElementById("categoryFilter"), totalRequestsElement = document.getElementById("totalRequests"), totalPrayersElement = document.getElementById("totalPrayers"), urgentRequestsElement = document.getElementById("urgentRequests");
+const prayerForm = document.getElementById("prayerForm");
+const prayerGrid = document.getElementById("prayerGrid");
+const formNotice = document.getElementById("formNotice");
+const submitBtn = document.getElementById("submitBtn");
+const searchInput = document.getElementById("searchInput");
+const categoryFilter = document.getElementById("categoryFilter");
+const totalRequestsElement = document.getElementById("totalRequests");
+const totalPrayersElement = document.getElementById("totalPrayers");
+const urgentRequestsElement = document.getElementById("urgentRequests");
+
 let allRequests = [];
 let submissionsOpen = true;
 let selectedAnsweredRequest = null;
 let wallFilter = "all";
 
-window.PRAYER_PROJECT_DEBUG = { EMAIL_ENDPOINT, PRAYER_EMAIL };
+window.PRAYER_PROJECT_DEBUG = { EMAIL_ENDPOINT, PRAYER_EMAIL, sendTestPrayerEmail };
 
 injectAnsweredModalStyles();
 createAnsweredModal();
@@ -31,12 +40,11 @@ prayerForm?.addEventListener("submit", async (event) => {
     submitBtn.disabled = true;
     submitBtn.textContent = "Submitting Prayer Request...";
 
-    const email = document.getElementById("email").value.trim();
     const publicRequest = {
       title: document.getElementById("title").value.trim(),
       category: document.getElementById("category").value,
       message: document.getElementById("message").value.trim(),
-      email,
+      email: document.getElementById("email").value.trim(),
       urgent: document.getElementById("urgent").value === "true",
       prayerCount: 0,
       reportCount: 0,
@@ -135,17 +143,17 @@ function attachCardAnswerHandlers(){
   });
 
   document.querySelectorAll(".prayer-card[data-card-id]").forEach((card)=>{
-    card.addEventListener("click",(event)=>{
+    const openFromCard = (event) => {
       if(event.target.closest("button")) return;
       const request = allRequests.find((item)=>item.id === card.dataset.cardId);
       if(request && !request.answered) openAnsweredModal(card.dataset.cardId);
-    });
+    };
+
+    card.addEventListener("click", openFromCard);
     card.addEventListener("keydown",(event)=>{
       if(event.key !== "Enter" && event.key !== " ") return;
-      if(event.target.closest("button")) return;
       event.preventDefault();
-      const request = allRequests.find((item)=>item.id === card.dataset.cardId);
-      if(request && !request.answered) openAnsweredModal(card.datasetId);
+      openFromCard(event);
     });
   });
 }
@@ -263,6 +271,32 @@ function showAnsweredNotice(message,type){
   notice.className = type ? `answered-modal-notice ${type}` : "answered-modal-notice";
 }
 
+function sendPrayerEmail(prayerRequest) {
+  const payload = {
+    email: prayerRequest.email,
+    requestTitle: prayerRequest.title,
+    requestMessage: prayerRequest.message,
+    prayerCount: (prayerRequest.prayerCount || 0) + 1
+  };
+
+  return fetch(EMAIL_ENDPOINT, {
+    method: "POST",
+    mode: "no-cors",
+    keepalive: true,
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  });
+}
+
+function sendTestPrayerEmail(email) {
+  return sendPrayerEmail({
+    email,
+    title: "Test Prayer Request",
+    message: "This is a test email from The Prayer Project.",
+    prayerCount: 0
+  });
+}
+
 function attachPrayButtons(){
   document.querySelectorAll(".pray-button").forEach((button)=>{
     button.addEventListener("click",async()=>{
@@ -270,15 +304,15 @@ function attachPrayButtons(){
       const prayerRequest=allRequests.find((request)=>request.id===requestId);
       if(!prayerRequest)return;
       if(!prayerRequest.email){ button.textContent="No Email Found"; setTimeout(()=>button.textContent="Pray For This Request",2600); return; }
+
       try{
-        button.disabled=true; button.textContent="Sending Prayer...";
-        const emailResponse = await fetch(EMAIL_ENDPOINT,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({email:prayerRequest.email,requestTitle:prayerRequest.title,requestMessage:prayerRequest.message,prayerCount:(prayerRequest.prayerCount||0)+1})});
-        const emailText = await emailResponse.text();
-        let emailResult = { success:false, raw: emailText };
-        try { emailResult = JSON.parse(emailText); } catch(parseError) { console.warn("Apps Script returned non-JSON:", emailText); }
-        console.log("Prayer Project email response:", emailResult);
+        button.disabled=true;
+        button.textContent="Sending Prayer...";
+
+        await sendPrayerEmail(prayerRequest);
         await updateDoc(doc(db,"prayer_requests",requestId),{prayerCount:increment(1),updatedAt:serverTimestamp()});
-        button.textContent = emailResult.success ? "Prayer Sent" : "Prayer Counted";
+
+        button.textContent = "Prayer Sent";
         setTimeout(()=>{button.textContent="Pray For This Request";button.disabled=false;},2600);
         await loadPrayerRequests();
       }catch(error){
