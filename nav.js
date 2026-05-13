@@ -2,7 +2,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setupLoader();
   setupPageTransitions();
   setupScrollAnimations();
-  setupFixedResourceSearch();
 
   const navLinks = document.querySelector(".nav-links");
   const navInner = document.querySelector(".nav-inner");
@@ -165,35 +164,6 @@ function createLoader(subtitle) {
     <div class="loader-line"><span></span></div>
   `;
   return loader;
-}
-
-function setupFixedResourceSearch() {
-  const tools = document.querySelector(".resource-tools");
-  const grid = document.querySelector("#resourceGrid");
-  if (!tools || !grid || document.getElementById("fixedResourceSearchStyles")) return;
-
-  const style = document.createElement("style");
-  style.id = "fixedResourceSearchStyles";
-  style.textContent = `
-    .resource-tools{
-      position:fixed!important;
-      top:86px!important;
-      left:50%!important;
-      transform:translateX(-50%)!important;
-      width:min(1160px,calc(100% - 38px))!important;
-      z-index:40!important;
-      margin:0!important;
-      box-shadow:0 22px 70px rgba(0,0,0,.62)!important;
-    }
-    #resourceGrid{margin-top:210px!important;}
-    @media(max-width:900px){
-      .resource-tools{top:78px!important;width:calc(100% - 24px)!important;padding:12px!important;border-radius:22px!important;}
-      .resource-tools .filter-tabs{max-height:92px;overflow:auto;padding-bottom:2px;}
-      .resource-tools .filter-btn{padding:9px 11px;font-size:11px;}
-      #resourceGrid{margin-top:340px!important;}
-    }
-  `;
-  document.head.appendChild(style);
 }
 
 function setupScrollAnimations() {
