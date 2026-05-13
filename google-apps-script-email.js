@@ -7,9 +7,11 @@ GOOGLE APPS SCRIPT EMAIL SYSTEM
 This version does NOT use Google Sheets.
 The website sends the requester's email directly to this script.
 The email is never displayed on the public website.
+
+After editing this file in Apps Script, you must deploy a NEW web app version.
 */
 
-const ADMIN_EMAIL = "YOUR_EMAIL@gmail.com";
+const ADMIN_EMAIL = "christophershelley257@gmail.com";
 
 function doGet() {
   return response({
