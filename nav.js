@@ -1,4 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
+  setupLoader();
+  setupScrollAnimations();
+
   const navLinks = document.querySelector(".nav-links");
   const navInner = document.querySelector(".nav-inner");
   if (!navLinks || !navInner) return;
@@ -104,3 +107,73 @@ document.addEventListener("DOMContentLoaded", () => {
     if (event.key === "Escape") closeMenu();
   });
 });
+
+function setupLoader() {
+  if (document.getElementById("siteLoader")) return;
+
+  document.documentElement.classList.add("site-loading");
+
+  const loader = document.createElement("div");
+  loader.id = "siteLoader";
+  loader.className = "site-loader";
+  loader.innerHTML = `
+    <div class="loader-mark">✦</div>
+    <div class="loader-title">The Prayer Project</div>
+    <div class="loader-subtitle">Preparing a quiet place to pray</div>
+    <div class="loader-line"><span></span></div>
+  `;
+  document.body.prepend(loader);
+
+  const hideLoader = () => {
+    loader.classList.add("hide");
+    document.documentElement.classList.remove("site-loading");
+    setTimeout(() => loader.remove(), 650);
+  };
+
+  window.addEventListener("load", () => setTimeout(hideLoader, 350));
+  setTimeout(hideLoader, 1800);
+}
+
+function setupScrollAnimations() {
+  const animatedSelector = [
+    ".hero-copy",
+    ".submit-card",
+    ".verse",
+    ".stat",
+    ".section-title",
+    ".toolbar",
+    ".prayer-card",
+    ".about-card",
+    ".card",
+    ".panel",
+    ".chapter",
+    ".prayer",
+    ".scripture-card",
+    ".summary-card",
+    ".note",
+    ".empty"
+  ].join(",");
+
+  const elements = [...document.querySelectorAll(animatedSelector)]
+    .filter((element) => !element.closest(".nav") && !element.closest(".site-loader"));
+
+  elements.forEach((element, index) => {
+    element.classList.add("reveal");
+    element.style.setProperty("--reveal-delay", `${Math.min(index % 6, 5) * 70}ms`);
+  });
+
+  if (!("IntersectionObserver" in window)) {
+    elements.forEach((element) => element.classList.add("visible"));
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("visible");
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+
+  elements.forEach((element) => observer.observe(element));
+}
