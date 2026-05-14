@@ -35,7 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="nav-group-grid">
         <a href="lords-prayer.html" data-page="lords-prayer.html"><strong>Lord's Prayer</strong><span>How Jesus taught us to pray</span></a>
         <a href="prayers.html" data-page="prayers.html"><strong>Prayers</strong><span>Simple prayers for hard moments</span></a>
-        <a href="resources.html" data-page="resources.html"><strong>Prayer Resources</strong><span>Verses and prayers by topic</span></a>
         <a href="bible-story.html" data-page="bible-story.html"><strong>Bible Story</strong><span>Creation, fall, redemption, and hope</span></a>
         <a href="answered.html" data-page="answered.html"><strong>Answered Prayers</strong><span>Remember what God has brought through</span></a>
         <a href="about.html" data-page="about.html"><strong>About</strong><span>The purpose of The Prayer Project</span></a>
@@ -46,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <button class="nav-group-title" type="button" aria-expanded="false">Support <span>▾</span></button>
       <div class="nav-group-grid">
         <a class="nav-crisis" href="crisis.html" data-page="crisis.html"><strong>Crisis Help</strong><span>Immediate help and support resources</span></a>
+        <a href="status.html" data-page="status.html"><strong>Site Status</strong><span>Submissions, email, and system status</span></a>
         <a href="privacy.html" data-page="privacy.html"><strong>Privacy</strong><span>How request information is handled</span></a>
         <a href="terms.html" data-page="terms.html"><strong>Terms</strong><span>Site rules and responsible use</span></a>
         <a href="login.html" data-page="login.html"><strong>Admin</strong><span>Protected moderation dashboard</span></a>
@@ -97,15 +97,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   navLinks.querySelectorAll("a").forEach((link) => link.addEventListener("click", closeMenu));
-
-  document.addEventListener("click", (event) => {
-    if (event.target.closest(".nav-group")) return;
-    closeDesktopDropdowns();
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeMenu();
-  });
+  document.addEventListener("click", (event) => { if (event.target.closest(".nav-group")) return; closeDesktopDropdowns(); });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeMenu(); });
 });
 
 function setupLoader() {
@@ -128,16 +121,8 @@ function setupLoader() {
 }
 
 function setupPageTransitions() {
-  window.addEventListener("pageshow", () => {
-    document.documentElement.style.backgroundColor = "#000";
-    if (document.body) document.body.style.backgroundColor = "#000";
-  });
-
-  window.addEventListener("beforeunload", () => {
-    document.documentElement.style.backgroundColor = "#000";
-    if (document.body) document.body.style.backgroundColor = "#000";
-  });
-
+  window.addEventListener("pageshow", () => { document.documentElement.style.backgroundColor = "#000"; if (document.body) document.body.style.backgroundColor = "#000"; });
+  window.addEventListener("beforeunload", () => { document.documentElement.style.backgroundColor = "#000"; if (document.body) document.body.style.backgroundColor = "#000"; });
   document.addEventListener("click", (event) => {
     const link = event.target.closest("a[href]");
     if (!link) return;
@@ -146,8 +131,7 @@ function setupPageTransitions() {
     if (link.target === "_blank" || link.hasAttribute("download")) return;
     const destination = new URL(href, window.location.href);
     const current = new URL(window.location.href);
-    const samePageAnchor = destination.pathname === current.pathname && destination.hash;
-    if (samePageAnchor) return;
+    if (destination.pathname === current.pathname && destination.hash) return;
     if (destination.origin !== current.origin) return;
     event.preventDefault();
     showPageTransition(destination.href);
@@ -176,27 +160,16 @@ function createLoader(subtitle) {
   const loader = document.createElement("div");
   loader.id = "siteLoader";
   loader.className = "site-loader";
-  loader.innerHTML = `
-    <div class="loader-mark">✦</div>
-    <div class="loader-title">The Prayer Project</div>
-    <div class="loader-subtitle">${subtitle}</div>
-    <div class="loader-line"><span></span></div>
-  `;
+  loader.innerHTML = `<div class="loader-mark">✦</div><div class="loader-title">The Prayer Project</div><div class="loader-subtitle">${subtitle}</div><div class="loader-line"><span></span></div>`;
   return loader;
 }
 
 function setupScrollAnimations() {
-  const animatedSelector = [
-    "main h1", "main h2", "main h3", ".lead", ".eyebrow", ".hero-copy", ".submit-card", ".verse", ".stat", ".section-title", ".toolbar", ".resource-tools", ".quick-card", ".urgent", ".prayer-card", ".about-card", ".answered-card", ".resource-item", ".card", ".panel", ".chapter", ".prayer", ".scripture-card", ".summary-card", ".note", ".empty", "form label", "footer"
-  ].join(",");
-
+  const animatedSelector = ["main h1", "main h2", "main h3", ".lead", ".eyebrow", ".hero-copy", ".submit-card", ".verse", ".stat", ".section-title", ".toolbar", ".resource-tools", ".quick-card", ".urgent", ".prayer-card", ".about-card", ".answered-card", ".status-card", ".card", ".panel", ".chapter", ".prayer", ".scripture-card", ".summary-card", ".note", ".empty", "form label", "footer"].join(",");
   const seen = new WeakSet();
   let observer;
-
   const animateElements = (root = document) => {
-    const elements = [...root.querySelectorAll(animatedSelector)]
-      .filter((element) => !element.closest(".nav") && !element.closest(".site-loader") && !element.closest(".page-transition-loader"));
-
+    const elements = [...root.querySelectorAll(animatedSelector)].filter((element) => !element.closest(".nav") && !element.closest(".site-loader") && !element.closest(".page-transition-loader"));
     elements.forEach((element, index) => {
       if (seen.has(element)) return;
       seen.add(element);
@@ -206,7 +179,6 @@ function setupScrollAnimations() {
       else element.classList.add("visible");
     });
   };
-
   if ("IntersectionObserver" in window) {
     observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -216,9 +188,7 @@ function setupScrollAnimations() {
       });
     }, { threshold: 0.1, rootMargin: "0px 0px -35px 0px" });
   }
-
   animateElements(document);
-
   const mutationObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
@@ -228,6 +198,5 @@ function setupScrollAnimations() {
       });
     });
   });
-
   mutationObserver.observe(document.body, { childList: true, subtree: true });
 }
