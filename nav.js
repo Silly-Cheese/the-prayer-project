@@ -113,13 +113,16 @@ function setupLoader() {
   document.body.style.backgroundColor = "#000";
   const loader = createLoader("Preparing a quiet place to pray");
   document.body.prepend(loader);
+  let hidden = false;
   const hideLoader = () => {
+    if (hidden) return;
+    hidden = true;
     loader.classList.add("hide");
     document.documentElement.classList.remove("site-loading");
-    setTimeout(() => loader.remove(), 650);
+    setTimeout(() => loader.remove(), 260);
   };
-  window.addEventListener("load", () => setTimeout(hideLoader, 350));
-  setTimeout(hideLoader, 1800);
+  window.addEventListener("load", () => setTimeout(hideLoader, 80));
+  setTimeout(hideLoader, 650);
 }
 
 function setupPageTransitions() {
@@ -164,7 +167,7 @@ function showPageTransition(url) {
   loader.style.opacity = "1";
   loader.style.visibility = "visible";
   requestAnimationFrame(() => loader.classList.add("show"));
-  setTimeout(() => { window.location.assign(url); }, 850);
+  setTimeout(() => { window.location.assign(url); }, 260);
 }
 
 function createLoader(subtitle) {
