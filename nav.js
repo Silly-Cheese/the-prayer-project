@@ -35,7 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="nav-group-grid">
         <a href="lords-prayer.html" data-page="lords-prayer.html"><strong>Lord's Prayer</strong><span>How Jesus taught us to pray</span></a>
         <a href="prayers.html" data-page="prayers.html"><strong>Prayers</strong><span>Simple prayers for hard moments</span></a>
+        <a href="resources.html" data-page="resources.html"><strong>Prayer Resources</strong><span>Verses and prayers by topic</span></a>
         <a href="bible-story.html" data-page="bible-story.html"><strong>Bible Story</strong><span>Creation, fall, redemption, and hope</span></a>
+        <a href="answered.html" data-page="answered.html"><strong>Answered Prayers</strong><span>Remember what God has brought through</span></a>
         <a href="about.html" data-page="about.html"><strong>About</strong><span>The purpose of The Prayer Project</span></a>
       </div>
     </div>
@@ -185,7 +187,7 @@ function createLoader(subtitle) {
 
 function setupScrollAnimations() {
   const animatedSelector = [
-    "main h1", "main h2", "main h3", ".lead", ".eyebrow", ".hero-copy", ".submit-card", ".verse", ".stat", ".section-title", ".toolbar", ".resource-tools", ".quick-card", ".urgent", ".prayer-card", ".about-card", ".card", ".panel", ".chapter", ".prayer", ".scripture-card", ".summary-card", ".note", ".empty", "form label", "footer"
+    "main h1", "main h2", "main h3", ".lead", ".eyebrow", ".hero-copy", ".submit-card", ".verse", ".stat", ".section-title", ".toolbar", ".resource-tools", ".quick-card", ".urgent", ".prayer-card", ".about-card", ".answered-card", ".resource-item", ".card", ".panel", ".chapter", ".prayer", ".scripture-card", ".summary-card", ".note", ".empty", "form label", "footer"
   ].join(",");
 
   const seen = new WeakSet();
