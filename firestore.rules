@@ -51,6 +51,15 @@ service cloud.firestore {
       allow update, delete: if signedIn();
     }
 
+    match /admin_notes/{noteId} {
+      allow read, create, update, delete: if signedIn();
+    }
+
+    match /audit_logs/{logId} {
+      allow read, create: if signedIn();
+      allow update, delete: if false;
+    }
+
     match /settings/{settingId} {
       allow read: if true;
       allow create, update, delete: if signedIn();
