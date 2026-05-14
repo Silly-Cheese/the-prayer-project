@@ -1,0 +1,9 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyAaaABQB1T_SaZ6TARafIXjJ6Zk-upjLO0",authDomain:"prayer-projec.firebaseapp.com",projectId:"prayer-projec",storageBucket:"prayer-projec.firebasestorage.app",messagingSenderId:"47966669764",appId:"1:47966669764:web:b875d2ea5bf75e3b7b3291"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+const ids=['requestCount','prayerCount','urgentCount','emailCount','reportedCount','removedCount'];
+onAuthStateChanged(auth,async user=>{if(!user){window.location.href='login.html';return;}await load();});
+async function load(){try{const snap=await getDocs(collection(db,'prayer_requests'));const requests=[];snap.forEach(d=>requests.push(d.data()));set('requestCount',requests.length);set('prayerCount',requests.reduce((s,r)=>s+(r.prayerCount||0),0));set('urgentCount',requests.filter(r=>r.urgent).length);set('emailCount',requests.filter(r=>r.answered).length);set('reportedCount',requests.filter(r=>(r.status||'approved')==='reported').length);set('removedCount',requests.filter(r=>(r.status||'approved')==='removed').length);document.getElementById('dashboardNotice').textContent='Overview loaded. Use the admin navigation to manage each section.';}catch(e){console.error(e);ids.forEach(id=>set(id,'—'));document.getElementById('dashboardNotice').textContent='Overview could not load. Check Firestore rules.';}}
+function set(id,value){const node=document.getElementById(id);if(node)node.textContent=value;}
