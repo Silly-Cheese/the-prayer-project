@@ -84,12 +84,9 @@ document.addEventListener("DOMContentLoaded", () => {
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-
       const group = button.closest(".nav-group");
       const isOpen = group.classList.contains("open");
-
       closeDesktopDropdowns();
-
       if (!isOpen) {
         group.classList.add("open");
         button.setAttribute("aria-expanded", "true");
@@ -112,6 +109,8 @@ document.addEventListener("DOMContentLoaded", () => {
 function setupLoader() {
   if (document.getElementById("siteLoader")) return;
   document.documentElement.classList.add("site-loading");
+  document.documentElement.style.backgroundColor = "#000";
+  document.body.style.backgroundColor = "#000";
   const loader = createLoader("Preparing a quiet place to pray");
   document.body.prepend(loader);
   const hideLoader = () => {
@@ -124,6 +123,16 @@ function setupLoader() {
 }
 
 function setupPageTransitions() {
+  window.addEventListener("pageshow", () => {
+    document.documentElement.style.backgroundColor = "#000";
+    if (document.body) document.body.style.backgroundColor = "#000";
+  });
+
+  window.addEventListener("beforeunload", () => {
+    document.documentElement.style.backgroundColor = "#000";
+    if (document.body) document.body.style.backgroundColor = "#000";
+  });
+
   document.addEventListener("click", (event) => {
     const link = event.target.closest("a[href]");
     if (!link) return;
@@ -148,9 +157,14 @@ function showPageTransition(url) {
     loader.classList.add("page-transition-loader");
     document.body.appendChild(loader);
   }
+  document.documentElement.style.backgroundColor = "#000";
+  document.body.style.backgroundColor = "#000";
   document.documentElement.classList.add("site-loading");
+  loader.classList.remove("hide");
+  loader.style.opacity = "1";
+  loader.style.visibility = "visible";
   requestAnimationFrame(() => loader.classList.add("show"));
-  setTimeout(() => { window.location.href = url; }, 420);
+  setTimeout(() => { window.location.assign(url); }, 850);
 }
 
 function createLoader(subtitle) {
