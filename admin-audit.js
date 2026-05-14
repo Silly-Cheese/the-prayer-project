@@ -1,0 +1,11 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyAaaABQB1T_SaZ6TARafIXjJ6Zk-upjLO0",authDomain:"prayer-projec.firebaseapp.com",projectId:"prayer-projec",storageBucket:"prayer-projec.firebasestorage.app",messagingSenderId:"47966669764",appId:"1:47966669764:web:b875d2ea5bf75e3b7b3291"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),list=document.getElementById('auditList'),search=document.getElementById('auditSearch'),limit=document.getElementById('auditLimit');
+let logs=[];
+onAuthStateChanged(auth,async user=>{if(!user){window.location.href='login.html';return;}await load();});
+search.addEventListener('input',render);limit.addEventListener('change',render);
+async function load(){try{const snap=await getDocs(query(collection(db,'audit_logs'),orderBy('createdAt','desc')));logs=[];snap.forEach(d=>logs.push({id:d.id,...d.data()}));render();}catch(e){console.error(e);list.innerHTML='<div class="empty">Audit log could not load. Publish Firestore rules and confirm indexes.</div>';}}
+function render(){const term=(search.value||'').toLowerCase().trim();let visible=logs.filter(l=>`${l.action||''} ${l.adminEmail||''} ${l.requestId||''}`.toLowerCase().includes(term));if(limit.value!=='all')visible=visible.slice(0,Number(limit.value));list.innerHTML=visible.length?visible.map(l=>`<article class="item"><h3>${esc(l.action||'Action')}</h3><p>${esc(l.adminEmail||'Admin')}</p><div class="meta"><span>Target: ${esc(l.requestId||'')}</span><span>${date(l.createdAt)}</span></div></article>`).join(''):'<div class="empty">No audit logs match this filter.</div>'}
+function date(t){return t?.toDate?t.toDate().toLocaleString():'Recently'}function esc(t=''){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#039;')}
