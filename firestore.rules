@@ -46,9 +46,17 @@ service cloud.firestore {
     match /reports/{reportId} {
       allow read: if signedIn();
       allow create: if request.resource.data.requestId is string
+        && request.resource.data.email is string
+        && request.resource.data.emailKey is string
+        && request.resource.data.category is string
         && request.resource.data.reason is string
         && request.resource.data.status == 'open';
       allow update, delete: if signedIn();
+    }
+
+    match /report_bans/{banId} {
+      allow read: if true;
+      allow create, update, delete: if signedIn();
     }
 
     match /admin_notes/{noteId} {
