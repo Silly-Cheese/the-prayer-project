@@ -14,37 +14,13 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    match /reports/{reportId} {
-      allow read, update, delete: if isAdmin();
-      allow create: if request.resource.data.requestId is string && request.resource.data.email is string && request.resource.data.emailKey is string && request.resource.data.category is string && request.resource.data.reason is string && request.resource.data.status == 'open';
-    }
-
+    match /reports/{reportId} { allow read, update, delete: if isAdmin(); allow create: if request.resource.data.requestId is string && request.resource.data.email is string && request.resource.data.emailKey is string && request.resource.data.category is string && request.resource.data.reason is string && request.resource.data.status == 'open'; }
     match /report_bans/{banId} { allow get: if true; allow list, create, update, delete: if isAdmin(); }
-
-    match /volunteer_applications/{applicationId} {
-      allow create: if request.resource.data.name is string && request.resource.data.email is string && request.resource.data.emailKey is string && request.resource.data.why is string && request.resource.data.status == 'submitted';
-      allow read, update, delete: if isAdmin();
-    }
-
-    match /volunteer_invites/{inviteId} {
-      allow get: if true;
-      allow list, create, delete: if isAdmin();
-      allow update: if isAdmin() || (signedIn() && request.resource.data.used == true && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'used');
-    }
-
-    match /volunteers/{volunteerId} {
-      allow read: if isSelf(volunteerId) || isAdmin();
-      allow create: if isSelf(volunteerId);
-      allow update: if isAdmin() || (isSelf(volunteerId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['agreementAccepted','agreementAcceptedAt','trainingCompleted','trainingCompletedAt','updatedAt']));
-      allow delete: if isAdmin();
-    }
-
-    match /volunteer_chapter_requests/{chapterId} {
-      allow read: if true;
-      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.email is string && request.resource.data.emailKey is string && request.resource.data.chapterName is string && request.resource.data.purpose is string && request.resource.data.status == 'submitted';
-      allow update, delete: if isAdmin();
-    }
-
+    match /volunteer_applications/{applicationId} { allow create: if request.resource.data.name is string && request.resource.data.email is string && request.resource.data.emailKey is string && request.resource.data.why is string && request.resource.data.status == 'submitted'; allow read, update, delete: if isAdmin(); }
+    match /volunteer_invites/{inviteId} { allow get: if true; allow list, create, delete: if isAdmin(); allow update: if isAdmin() || (signedIn() && request.resource.data.used == true && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'used'); }
+    match /volunteers/{volunteerId} { allow read: if isSelf(volunteerId) || isAdmin(); allow create: if isSelf(volunteerId); allow update: if isAdmin() || (isSelf(volunteerId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['agreementAccepted','agreementAcceptedAt','trainingCompleted','trainingCompletedAt','updatedAt'])); allow delete: if isAdmin(); }
+    match /volunteer_chapter_requests/{chapterId} { allow read: if true; allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.email is string && request.resource.data.emailKey is string && request.resource.data.chapterName is string && request.resource.data.purpose is string && request.resource.data.status == 'submitted'; allow update, delete: if isAdmin(); }
+    match /volunteer_chapters/{chapterId} { allow read: if true; allow create, update, delete: if isAdmin(); }
     match /volunteer_activity_updates/{activityId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if isAdmin(); }
     match /volunteer_service_logs/{logId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.summary is string; allow read, update, delete: if isAdmin(); }
     match /volunteer_care_projects/{projectId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.title is string && request.resource.data.purpose is string && request.resource.data.status == 'submitted'; allow read, update, delete: if isAdmin(); }
@@ -58,7 +34,6 @@ service cloud.firestore {
     match /volunteer_badges/{badgeId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
     match /chapter_reports/{reportId} { allow create: if signedIn(); allow read, update, delete: if isAdmin(); }
     match /chapter_members/{memberId} { allow create: if signedIn(); allow read, update, delete: if isAdmin(); }
-
     match /admin_notes/{noteId} { allow read, create, update, delete: if isAdmin(); }
     match /audit_logs/{logId} { allow read, create: if isAdmin(); allow update, delete: if false; }
     match /settings/{settingId} { allow read: if true; allow create, update, delete: if isAdmin(); }
