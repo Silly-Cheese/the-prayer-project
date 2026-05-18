@@ -59,6 +59,40 @@ service cloud.firestore {
       allow create, update, delete: if signedIn();
     }
 
+    match /volunteer_applications/{applicationId} {
+      allow create: if request.resource.data.name is string
+        && request.resource.data.email is string
+        && request.resource.data.emailKey is string
+        && request.resource.data.why is string
+        && request.resource.data.status == 'submitted';
+      allow read, update, delete: if signedIn();
+    }
+
+    match /volunteer_invites/{inviteId} {
+      allow read: if true;
+      allow create, update, delete: if signedIn();
+    }
+
+    match /volunteers/{volunteerId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == volunteerId;
+      allow update, delete: if signedIn();
+    }
+
+    match /volunteer_chapter_requests/{chapterId} {
+      allow create: if request.resource.data.email is string
+        && request.resource.data.emailKey is string
+        && request.resource.data.chapterName is string
+        && request.resource.data.purpose is string
+        && request.resource.data.status == 'submitted';
+      allow read, update, delete: if signedIn();
+    }
+
+    match /volunteer_activity_updates/{activityId} {
+      allow create: if signedIn();
+      allow read, update, delete: if signedIn();
+    }
+
     match /admin_notes/{noteId} {
       allow read, create, update, delete: if signedIn();
     }
