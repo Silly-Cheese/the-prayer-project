@@ -9,7 +9,6 @@ service cloud.firestore {
 
     match /prayer_requests/{requestId} {
       allow read: if resource.data.status == 'approved' || signedIn();
-
       allow create: if request.resource.data.title is string
         && request.resource.data.message is string
         && request.resource.data.email is string
@@ -19,27 +18,19 @@ service cloud.firestore {
         && request.resource.data.reportCount == 0
         && request.resource.data.answered == false
         && request.resource.data.status == 'approved';
-
       allow update: if signedIn()
-        || (
-          resource.data.status == 'approved'
+        || (resource.data.status == 'approved'
           && request.resource.data.diff(resource.data).changedKeys().hasOnly(['prayerCount', 'updatedAt'])
-          && request.resource.data.prayerCount == resource.data.prayerCount + 1
-        )
-        || (
-          resource.data.status == 'approved'
+          && request.resource.data.prayerCount == resource.data.prayerCount + 1)
+        || (resource.data.status == 'approved'
           && request.resource.data.status == 'reported'
           && request.resource.data.reportCount == resource.data.reportCount + 1
-          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['reportCount', 'status', 'updatedAt'])
-        )
-        || (
-          resource.data.status == 'approved'
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['reportCount', 'status', 'updatedAt']))
+        || (resource.data.status == 'approved'
           && resource.data.answered != true
           && request.resource.data.answered == true
           && request.resource.data.diff(resource.data).changedKeys().hasOnly(['answered', 'answeredAt', 'answeredTestimony', 'updatedAt'])
-          && (!('answeredTestimony' in request.resource.data) || request.resource.data.answeredTestimony is string)
-        );
-
+          && (!('answeredTestimony' in request.resource.data) || request.resource.data.answeredTestimony is string));
       allow delete: if signedIn();
     }
 
@@ -76,20 +67,46 @@ service cloud.firestore {
     match /volunteers/{volunteerId} {
       allow read: if signedIn();
       allow create: if signedIn() && request.auth.uid == volunteerId;
-      allow update, delete: if signedIn();
+      allow update: if signedIn() && (request.auth.uid == volunteerId || signedIn());
+      allow delete: if signedIn();
     }
 
     match /volunteer_chapter_requests/{chapterId} {
-      allow create: if request.resource.data.email is string
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.email is string
         && request.resource.data.emailKey is string
         && request.resource.data.chapterName is string
+        && request.resource.data.purpose is string
+        && request.resource.data.status == 'submitted';
+      allow update, delete: if signedIn();
+    }
+
+    match /volunteer_activity_updates/{activityId} {
+      allow create: if signedIn();
+      allow read, update, delete: if signedIn();
+    }
+
+    match /volunteer_service_logs/{logId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.summary is string;
+      allow read, update, delete: if signedIn();
+    }
+
+    match /volunteer_care_projects/{projectId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.title is string
         && request.resource.data.purpose is string
         && request.resource.data.status == 'submitted';
       allow read, update, delete: if signedIn();
     }
 
-    match /volunteer_activity_updates/{activityId} {
-      allow create: if signedIn();
+    match /volunteer_training_completions/{completionId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.reflection is string;
       allow read, update, delete: if signedIn();
     }
 
