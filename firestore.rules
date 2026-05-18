@@ -3,59 +3,66 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    function ownerEmail() { return signedIn() && request.auth.token.email == 'christophershelley257@gmail.com'; }
+    function isAdmin() { return ownerEmail() || (signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))); }
+    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
 
     match /prayer_requests/{requestId} {
-      allow read: if resource.data.status == 'approved' || signedIn();
+      allow read: if resource.data.status == 'approved' || isAdmin();
       allow create: if request.resource.data.title is string && request.resource.data.message is string && request.resource.data.email is string && request.resource.data.category is string && request.resource.data.urgent is bool && request.resource.data.prayerCount == 0 && request.resource.data.reportCount == 0 && request.resource.data.answered == false && request.resource.data.status == 'approved';
-      allow update: if signedIn() || (resource.data.status == 'approved' && request.resource.data.diff(resource.data).changedKeys().hasOnly(['prayerCount', 'updatedAt']) && request.resource.data.prayerCount == resource.data.prayerCount + 1) || (resource.data.status == 'approved' && request.resource.data.status == 'reported' && request.resource.data.reportCount == resource.data.reportCount + 1 && request.resource.data.diff(resource.data).changedKeys().hasOnly(['reportCount', 'status', 'updatedAt'])) || (resource.data.status == 'approved' && resource.data.answered != true && request.resource.data.answered == true && request.resource.data.diff(resource.data).changedKeys().hasOnly(['answered', 'answeredAt', 'answeredTestimony', 'updatedAt']) && (!('answeredTestimony' in request.resource.data) || request.resource.data.answeredTestimony is string));
-      allow delete: if signedIn();
+      allow update: if isAdmin() || (resource.data.status == 'approved' && request.resource.data.diff(resource.data).changedKeys().hasOnly(['prayerCount', 'updatedAt']) && request.resource.data.prayerCount == resource.data.prayerCount + 1) || (resource.data.status == 'approved' && request.resource.data.status == 'reported' && request.resource.data.reportCount == resource.data.reportCount + 1 && request.resource.data.diff(resource.data).changedKeys().hasOnly(['reportCount', 'status', 'updatedAt'])) || (resource.data.status == 'approved' && resource.data.answered != true && request.resource.data.answered == true && request.resource.data.diff(resource.data).changedKeys().hasOnly(['answered', 'answeredAt', 'answeredTestimony', 'updatedAt']) && (!('answeredTestimony' in request.resource.data) || request.resource.data.answeredTestimony is string));
+      allow delete: if isAdmin();
     }
 
     match /reports/{reportId} {
-      allow read: if signedIn();
+      allow read, update, delete: if isAdmin();
       allow create: if request.resource.data.requestId is string && request.resource.data.email is string && request.resource.data.emailKey is string && request.resource.data.category is string && request.resource.data.reason is string && request.resource.data.status == 'open';
-      allow update, delete: if signedIn();
     }
 
-    match /report_bans/{banId} { allow read: if true; allow create, update, delete: if signedIn(); }
+    match /report_bans/{banId} { allow get: if true; allow list, create, update, delete: if isAdmin(); }
 
     match /volunteer_applications/{applicationId} {
       allow create: if request.resource.data.name is string && request.resource.data.email is string && request.resource.data.emailKey is string && request.resource.data.why is string && request.resource.data.status == 'submitted';
-      allow read, update, delete: if signedIn();
+      allow read, update, delete: if isAdmin();
     }
 
-    match /volunteer_invites/{inviteId} { allow read: if true; allow create, update, delete: if signedIn(); }
+    match /volunteer_invites/{inviteId} {
+      allow get: if true;
+      allow list, create, delete: if isAdmin();
+      allow update: if isAdmin() || (signedIn() && request.resource.data.used == true && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'used');
+    }
 
     match /volunteers/{volunteerId} {
-      allow read: if signedIn();
-      allow create: if signedIn() && request.auth.uid == volunteerId;
-      allow update, delete: if signedIn();
+      allow read: if isSelf(volunteerId) || isAdmin();
+      allow create: if isSelf(volunteerId);
+      allow update: if isAdmin() || (isSelf(volunteerId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['agreementAccepted','agreementAcceptedAt','trainingCompleted','trainingCompletedAt','updatedAt']));
+      allow delete: if isAdmin();
     }
 
     match /volunteer_chapter_requests/{chapterId} {
       allow read: if true;
       allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.email is string && request.resource.data.emailKey is string && request.resource.data.chapterName is string && request.resource.data.purpose is string && request.resource.data.status == 'submitted';
-      allow update, delete: if signedIn();
+      allow update, delete: if isAdmin();
     }
 
-    match /volunteer_activity_updates/{activityId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if signedIn(); }
-    match /volunteer_service_logs/{logId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.summary is string; allow read, update, delete: if signedIn(); }
-    match /volunteer_care_projects/{projectId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.title is string && request.resource.data.purpose is string && request.resource.data.status == 'submitted'; allow read, update, delete: if signedIn(); }
-    match /volunteer_training_completions/{completionId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.reflection is string; allow read, update, delete: if signedIn(); }
-    match /volunteer_assignments/{assignmentId} { allow read, create, update, delete: if signedIn(); }
-    match /volunteer_contacts/{contactId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if signedIn(); }
-    match /volunteer_leave_requests/{leaveId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if signedIn(); }
-    match /volunteer_announcements/{announcementId} { allow read: if signedIn(); allow create, update, delete: if signedIn(); }
-    match /volunteer_settings/{settingId} { allow read: if true; allow create, update, delete: if signedIn(); }
-    match /volunteer_notes/{noteId} { allow read, create, update, delete: if signedIn(); }
-    match /volunteer_badges/{badgeId} { allow read, create, update, delete: if signedIn(); }
-    match /chapter_reports/{reportId} { allow create: if signedIn(); allow read, update, delete: if signedIn(); }
-    match /chapter_members/{memberId} { allow create: if signedIn(); allow read, update, delete: if signedIn(); }
+    match /volunteer_activity_updates/{activityId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if isAdmin(); }
+    match /volunteer_service_logs/{logId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.summary is string; allow read, update, delete: if isAdmin(); }
+    match /volunteer_care_projects/{projectId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.title is string && request.resource.data.purpose is string && request.resource.data.status == 'submitted'; allow read, update, delete: if isAdmin(); }
+    match /volunteer_training_completions/{completionId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.reflection is string; allow read, update, delete: if isAdmin(); }
+    match /volunteer_assignments/{assignmentId} { allow read: if isAdmin() || (signedIn() && resource.data.assignedToUid == request.auth.uid); allow create, delete: if isAdmin(); allow update: if isAdmin() || (signedIn() && resource.data.assignedToUid == request.auth.uid && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','completedAt','volunteerResponse','updatedAt'])); }
+    match /volunteer_contacts/{contactId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if isAdmin(); }
+    match /volunteer_leave_requests/{leaveId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if isAdmin(); }
+    match /volunteer_announcements/{announcementId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
+    match /volunteer_settings/{settingId} { allow read: if true; allow create, update, delete: if isAdmin(); }
+    match /volunteer_notes/{noteId} { allow read, create, update, delete: if isAdmin(); }
+    match /volunteer_badges/{badgeId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
+    match /chapter_reports/{reportId} { allow create: if signedIn(); allow read, update, delete: if isAdmin(); }
+    match /chapter_members/{memberId} { allow create: if signedIn(); allow read, update, delete: if isAdmin(); }
 
-    match /admin_notes/{noteId} { allow read, create, update, delete: if signedIn(); }
-    match /audit_logs/{logId} { allow read, create: if signedIn(); allow update, delete: if false; }
-    match /settings/{settingId} { allow read: if true; allow create, update, delete: if signedIn(); }
-    match /admins/{adminId} { allow read, write: if signedIn(); }
+    match /admin_notes/{noteId} { allow read, create, update, delete: if isAdmin(); }
+    match /audit_logs/{logId} { allow read, create: if isAdmin(); allow update, delete: if false; }
+    match /settings/{settingId} { allow read: if true; allow create, update, delete: if isAdmin(); }
+    match /admins/{adminId} { allow read: if isAdmin(); allow write: if ownerEmail(); }
     match /{document=**} { allow read, write: if false; }
   }
 }
