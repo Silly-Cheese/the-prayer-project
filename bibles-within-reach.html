@@ -4,51 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Bibles Within Reach | The Prayer Project</title>
-  <meta name="description" content="Bibles Within Reach is a Prayer Project initiative raising support to purchase and freely distribute Bibles to people who may otherwise have difficulty obtaining one.">
+  <meta name="description" content="Bibles Within Reach is a Prayer Project initiative preparing to raise support, purchase Bibles, and distribute them free of charge to people who may otherwise have difficulty obtaining one.">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./theme.css">
   <style>
-    .hero{padding:92px 0 48px}
-    .hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:26px;align-items:stretch}
-    .hero-copy{padding:16px 0}
-    .hero-copy .lead{max-width:790px}
-    .hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}
-    .launch-card{padding:34px;display:flex;flex-direction:column;justify-content:space-between;min-height:390px}
-    .launch-label{font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
-    .launch-date{font-family:"Playfair Display",serif;font-size:clamp(42px,6vw,66px);line-height:.95;letter-spacing:-.05em;margin:18px 0;color:var(--warm2)}
-    .launch-card p{color:var(--muted);line-height:1.8;margin:0}
-    .launch-status{margin-top:28px;padding:15px 17px;border-radius:18px;background:rgba(216,195,165,.08);border:1px solid rgba(216,195,165,.2);color:var(--warm2);font-size:13px;font-weight:850}
-    section{padding:52px 0}
-    .section-copy{max-width:820px;margin-bottom:26px}
-    .section-copy p{color:var(--muted);font-size:17px;line-height:1.9;margin:0}
-    .purpose-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-    .purpose-card{padding:30px;min-height:250px}
-    .purpose-card .number{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:rgba(216,195,165,.1);border:1px solid rgba(216,195,165,.22);color:var(--warm2);font-weight:900;margin-bottom:18px}
-    .purpose-card h3{font-size:23px;margin:0 0 12px}
-    .purpose-card p{color:var(--muted);line-height:1.8;margin:0}
-    .mission{display:grid;grid-template-columns:.9fr 1.1fr;gap:22px;align-items:stretch}
-    .mission-side,.mission-main{padding:34px}
-    .mission-side p,.mission-main p{color:var(--muted);line-height:1.9}
-    .mission-main p:first-child{margin-top:0}
-    .mission-main p:last-child{margin-bottom:0}
-    .quote{border-left:4px solid var(--warm);padding:24px;background:rgba(216,195,165,.07);border-radius:20px;margin-top:26px;color:#fff;line-height:1.8}
-    .quote small{display:block;color:var(--warm);font-weight:900;margin-top:10px}
-    .timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-    .timeline-step{padding:26px}
-    .timeline-step strong{display:block;color:var(--warm2);font-size:13px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
-    .timeline-step h3{font-size:21px;margin:0 0 10px}
-    .timeline-step p{color:var(--muted);line-height:1.7;margin:0;font-size:14px}
-    .promise-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
-    .promise-card{padding:32px}
-    .promise-card h3{font-size:24px;margin:0 0 12px}
-    .promise-card p{color:var(--muted);line-height:1.85;margin:0}
-    .coming-soon{padding:38px;text-align:center;margin:34px auto 82px}
-    .coming-soon p{max-width:760px;margin:0 auto 24px;color:var(--muted);line-height:1.85}
-    .fine-print{font-size:12px!important;color:var(--soft)!important;margin-top:18px!important}
-    @media(max-width:900px){.hero-grid,.mission,.purpose-grid,.timeline,.promise-grid{grid-template-columns:1fr}.hero{padding-top:64px}.launch-card{min-height:auto}}
+    .hero{padding:92px 0 48px}.hero-grid{display:grid;grid-template-columns:1.08fr .92fr;gap:26px;align-items:stretch}.hero-copy{padding:16px 0}.hero-copy .lead{max-width:810px}.hero-actions,.action-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}.launch-card{padding:34px;display:flex;flex-direction:column;justify-content:space-between;min-height:410px}.launch-label,.mini-label{font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}.launch-date{font-family:"Playfair Display",serif;font-size:clamp(42px,6vw,66px);line-height:.95;letter-spacing:-.05em;margin:18px 0;color:var(--warm2)}.launch-card p{color:var(--muted);line-height:1.8;margin:0}.launch-status{margin-top:28px;padding:15px 17px;border-radius:18px;background:rgba(216,195,165,.08);border:1px solid rgba(216,195,165,.2);color:var(--warm2);font-size:13px;font-weight:850}.quick-links{display:flex;gap:10px;flex-wrap:wrap;padding:18px 20px;margin:2px auto 26px}.quick-links a{padding:10px 13px;border-radius:999px;background:rgba(255,255,255,.045);border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:850}.quick-links a:hover{color:var(--text);border-color:var(--line2)}section{padding:54px 0}.section-copy{max-width:850px;margin-bottom:28px}.section-copy p{color:var(--muted);font-size:17px;line-height:1.9;margin:0}.section-copy .section-heading{margin-top:14px}.purpose-grid,.three-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.two-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}.four-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}.info-card,.purpose-card,.promise-card,.participate-card,.metric-card{padding:30px}.purpose-card{min-height:250px}.number{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:rgba(216,195,165,.1);border:1px solid rgba(216,195,165,.22);color:var(--warm2);font-weight:900;margin-bottom:18px}.info-card h3,.purpose-card h3,.promise-card h3,.participate-card h3{font-size:23px;margin:0 0 12px}.info-card p,.purpose-card p,.promise-card p,.participate-card p{color:var(--muted);line-height:1.82;margin:0}.split{display:grid;grid-template-columns:.9fr 1.1fr;gap:22px;align-items:stretch}.split-side,.split-main{padding:34px}.split-side p,.split-main p{color:var(--muted);line-height:1.9}.split-main p:first-child{margin-top:0}.split-main p:last-child{margin-bottom:0}.quote{border-left:4px solid var(--warm);padding:24px;background:rgba(216,195,165,.07);border-radius:20px;margin-top:26px;color:#fff;line-height:1.8}.quote small{display:block;color:var(--warm);font-weight:900;margin-top:10px}.goal-card{padding:38px;display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center}.goal-card h2{margin:12px 0;font-family:"Playfair Display",serif;font-size:clamp(36px,5vw,54px);letter-spacing:-.04em}.goal-card p{color:var(--muted);line-height:1.85;max-width:820px;margin:0}.goal-badge{width:170px;height:170px;border-radius:50%;display:grid;place-items:center;text-align:center;border:1px solid rgba(216,195,165,.28);background:radial-gradient(circle,rgba(216,195,165,.12),rgba(255,255,255,.025));color:var(--warm2);font-family:"Playfair Display",serif;font-size:25px;line-height:1.05;font-weight:800}.distribution-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.flow-step{padding:26px;min-height:225px}.flow-step strong,.phase-card strong{display:block;color:var(--warm2);font-size:12px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}.flow-step h3,.phase-card h3{font-size:21px;margin:0 0 10px}.flow-step p,.phase-card p{color:var(--muted);line-height:1.72;margin:0;font-size:14px}.principle-list{display:grid;gap:12px}.principle{padding:18px 20px;border-radius:20px;border:1px solid var(--line);background:rgba(255,255,255,.035)}.principle strong{display:block;color:var(--warm2);margin-bottom:6px}.principle span{color:var(--muted);line-height:1.65}.timeline{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}.phase-card{padding:24px}.phase-card .phase-number{font-family:"Playfair Display",serif;font-size:38px;color:var(--warm2);margin-bottom:18px}.funding-note{padding:28px;margin-top:20px}.funding-note p{color:var(--muted);line-height:1.8;margin:0}.metric-card{text-align:center}.metric-card span{display:block;color:var(--soft);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.14em}.metric-card strong{display:block;font-family:"Playfair Display",serif;color:var(--warm2);font-size:38px;margin:12px 0}.metric-card p{color:var(--muted);font-size:13px;line-height:1.65;margin:0}.future-tag{display:inline-flex;margin-top:18px;padding:8px 12px;border-radius:999px;background:rgba(216,195,165,.08);border:1px solid rgba(216,195,165,.18);color:var(--warm2);font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.updates{display:grid;gap:14px}.update-item{display:grid;grid-template-columns:150px 1fr;gap:20px;padding:24px}.update-item time{color:var(--warm2);font-weight:900}.update-item h3{margin:0 0 8px;font-size:20px}.update-item p{color:var(--muted);line-height:1.75;margin:0}.faq{display:grid;gap:12px}.faq details{padding:0;border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.03));border:1px solid var(--line);overflow:hidden}.faq summary{cursor:pointer;list-style:none;padding:20px 22px;font-weight:900;color:var(--text)}.faq summary::-webkit-details-marker{display:none}.faq summary:after{content:"+";float:right;color:var(--warm2);font-size:22px;line-height:1}.faq details[open] summary:after{content:"–"}.faq details p{padding:0 22px 22px;margin:0;color:var(--muted);line-height:1.8}.ministry-statement{padding:38px}.ministry-statement p{color:var(--muted);font-size:17px;line-height:1.9}.ministry-statement p:last-child{margin-bottom:0}.coming-soon{padding:42px;text-align:center;margin:34px auto 82px}.coming-soon p{max-width:790px;margin:0 auto 24px;color:var(--muted);line-height:1.85}.fine-print{font-size:12px!important;color:var(--soft)!important;margin-top:18px!important}@media(max-width:1000px){.timeline{grid-template-columns:repeat(2,1fr)}}@media(max-width:900px){.hero-grid,.split,.purpose-grid,.three-grid,.two-grid,.four-grid,.distribution-flow,.goal-card{grid-template-columns:1fr}.hero{padding-top:64px}.launch-card{min-height:auto}.goal-badge{width:140px;height:140px}.update-item{grid-template-columns:1fr;gap:8px}}@media(max-width:620px){.quick-links{display:grid}.timeline{grid-template-columns:1fr}.hero-actions .btn,.action-row .btn{width:100%}}
   </style>
 </head>
 <body>
@@ -59,61 +22,140 @@
       <div class="hero-copy">
         <div class="eyebrow">A Prayer Project Initiative</div>
         <h1>Bibles Within Reach.</h1>
-        <p class="lead">Putting the Word of God within reach. Bibles Within Reach is a six-month Prayer Project fundraising and outreach initiative dedicated to purchasing Bibles and providing them free of charge to people who may otherwise have difficulty obtaining one.</p>
-        <div class="hero-actions"><a class="btn btn-primary" href="#mission">Learn About the Mission</a><a class="btn btn-secondary" href="#timeline">See the Timeline</a></div>
+        <p class="lead">Putting the Word of God within reach. Bibles Within Reach is a six-month Prayer Project fundraising and outreach initiative being developed to purchase Bibles and provide them free of charge to people who may otherwise have difficulty obtaining one.</p>
+        <div class="hero-actions"><a class="btn btn-primary" href="#mission">Explore the Mission</a><a class="btn btn-secondary" href="#participate">Ways to Participate</a></div>
       </div>
       <aside class="launch-card card">
-        <div>
-          <div class="launch-label">Planned Public Launch</div>
-          <div class="launch-date">Late May<br>2027</div>
-          <p>The campaign is currently in its planning stage. Fundraising is expected to continue for approximately six months after launch.</p>
-        </div>
+        <div><div class="launch-label">Planned Public Launch</div><div class="launch-date">Late May<br>2027</div><p>The initiative is currently in its preparation stage. The public fundraising campaign is planned to run for approximately six months, through late November 2027.</p></div>
         <div class="launch-status">Coming Soon • Donations are not being accepted through this initiative page yet.</div>
       </aside>
     </div></section>
 
+    <div class="shell quick-links card"><a href="#why">Why it exists</a><a href="#distribution">Distribution</a><a href="#funding">Use of support</a><a href="#timeline">Five phases</a><a href="#accountability">Accountability</a><a href="#participate">Participate</a><a href="#faq">FAQ</a></div>
+
     <section id="mission"><div class="shell">
-      <div class="section-copy"><div class="eyebrow">The Purpose</div><h2 class="section-heading">Scripture should not feel out of reach.</h2><p>The Prayer Project believes access to a Bible should not depend on someone's financial circumstances. This initiative is designed to turn generosity into something tangible: Bibles placed directly into the hands of people who need them.</p></div>
+      <div class="section-copy"><div class="eyebrow">The Purpose</div><h2 class="section-heading">Scripture should not feel out of reach.</h2><p>The Prayer Project believes that a person's financial circumstances should not be the reason they cannot have a Bible of their own. Bibles Within Reach is designed to turn generosity into something tangible: Scripture placed directly into the hands of people who want it.</p></div>
       <div class="purpose-grid">
-        <div class="purpose-card card"><div class="number">1</div><h3>Raise support</h3><p>For approximately six months, The Prayer Project will raise designated support for the initiative and prepare for responsible purchasing and distribution.</p></div>
-        <div class="purpose-card card"><div class="number">2</div><h3>Purchase Bibles</h3><p>After the campaign period, raised funds will be used to purchase Bibles for free distribution as part of The Prayer Project's outreach ministry.</p></div>
-        <div class="purpose-card card"><div class="number">3</div><h3>Give them freely</h3><p>Bibles purchased through the initiative will be distributed without charge to people experiencing homelessness, financial hardship, or other barriers to obtaining Scripture.</p></div>
+        <div class="purpose-card card"><div class="number">1</div><h3>Raise support</h3><p>Run a focused six-month public campaign that gives people a clear way to support Bible purchasing and responsible distribution.</p></div>
+        <div class="purpose-card card"><div class="number">2</div><h3>Purchase Bibles</h3><p>Use campaign resources to purchase Bibles in appropriate formats and quantities once supplier pricing, demand, and distribution capacity are known.</p></div>
+        <div class="purpose-card card"><div class="number">3</div><h3>Give them freely</h3><p>Provide those Bibles without charge through direct outreach and trusted community relationships, with dignity and respect for every recipient.</p></div>
       </div>
     </div></section>
 
-    <section><div class="shell mission">
-      <aside class="mission-side card"><div class="eyebrow">Who We Hope to Serve</div><h2 class="section-heading">People who may not have easy access to a Bible.</h2><p>The initial focus is on individuals experiencing homelessness or financial hardship, while leaving room to serve others who genuinely lack reliable access to Scripture.</p></aside>
-      <article class="mission-main card"><p>Bibles Within Reach is not intended to be a short collection drive. It is being developed as an organized Prayer Project outreach initiative with a defined fundraising period, planned purchasing, and intentional distribution.</p><p>The goal is simple: receive support responsibly, turn that support into Bibles, and then give those Bibles away. As the initiative develops, The Prayer Project plans to share campaign updates and later report tangible impact such as Bibles purchased and distributed.</p><div class="quote">“So shall my word be that goeth forth out of my mouth: it shall not return unto me void.”<small>Isaiah 55:11</small></div></article>
+    <section><div class="shell goal-card card">
+      <div><div class="eyebrow">Our First Campaign Goal</div><h2>Build access, not just a number.</h2><p>Our first campaign goal is to put as many Bibles as responsibly possible into the hands of people who want one while building a distribution network that can continue beyond the first six-month campaign. A specific Bible-count or fundraising target can be published closer to launch once supplier pricing and distribution capacity are finalized.</p></div>
+      <div class="goal-badge">Reach.<br>Give.<br>Continue.</div>
+    </div></section>
+
+    <section id="why"><div class="shell split">
+      <aside class="split-side card"><div class="eyebrow">Why It Exists</div><h2 class="section-heading">A Bible of your own should not be a luxury.</h2><p>People experiencing homelessness, financial hardship, displacement, reentry, or other difficult circumstances may not have easy access to a Bible they can keep and use.</p></aside>
+      <article class="split-main card"><p>Bibles Within Reach is not intended to be a short collection drive. It is being developed as an organized Prayer Project outreach initiative with a defined campaign period, intentional purchasing, responsible distribution, and public impact reporting.</p><p>The initiative begins with a simple conviction: if someone wants access to Scripture, The Prayer Project should look for practical ways to help place it within reach. That means more than collecting money. It means preparing distribution relationships, selecting appropriate Bibles, respecting recipients, tracking the work, and learning how the effort can continue.</p><div class="quote">“So shall my word be that goeth forth out of my mouth: it shall not return unto me void.”<small>Isaiah 55:11</small></div></article>
+    </div></section>
+
+    <section id="distribution"><div class="shell">
+      <div class="section-copy"><div class="eyebrow">How Distribution Will Work</div><h2 class="section-heading">From campaign support to a Bible in someone's hands.</h2><p>The final distribution model will be refined before launch, but the initiative is being built around direct outreach and trusted local relationships rather than simply purchasing Bibles without a plan for where they will go.</p></div>
+      <div class="distribution-flow">
+        <div class="flow-step card"><strong>Step 1</strong><h3>Identify needs</h3><p>TPP will seek appropriate distribution opportunities through volunteers, chapters, churches, shelters, ministries, and community relationships where practical.</p></div>
+        <div class="flow-step card"><strong>Step 2</strong><h3>Match the supply</h3><p>Bible quantities and formats can be selected with real distribution needs in mind instead of ordering blindly.</p></div>
+        <div class="flow-step card"><strong>Step 3</strong><h3>Distribute with dignity</h3><p>Bibles will be offered freely and respectfully. Receiving Scripture will not require a purchase, donation, membership, or participation in another TPP program.</p></div>
+        <div class="flow-step card"><strong>Step 4</strong><h3>Record the impact</h3><p>TPP plans to track purchasing and distribution totals so supporters can see what the campaign actually accomplished.</p></div>
+      </div>
+    </div></section>
+
+    <section><div class="shell two-grid">
+      <div class="info-card card"><div class="eyebrow">Who Can Receive a Bible?</div><h3>People who need or request one.</h3><p>The initial focus is on people experiencing homelessness or financial hardship, while leaving room to serve others who genuinely lack reliable access to Scripture. The goal is access, not creating unnecessary barriers or forcing someone to prove their hardship.</p></div>
+      <div class="info-card card"><div class="eyebrow">Distribution Principles</div><div class="principle-list"><div class="principle"><strong>Free</strong><span>No Bible purchased through the initiative is intended for resale to a recipient.</span></div><div class="principle"><strong>Respectful</strong><span>Recipients should be treated with dignity, not as statistics or promotional material.</span></div><div class="principle"><strong>Voluntary</strong><span>No one should be pressured to accept a Bible or required to participate in another activity to receive one.</span></div><div class="principle"><strong>Responsible</strong><span>Distribution should be organized in ways that make good use of the resources entrusted to the initiative.</span></div></div></div>
+    </div></section>
+
+    <section id="funding"><div class="shell">
+      <div class="section-copy"><div class="eyebrow">What Support Will Do</div><h2 class="section-heading">A defined purpose for the campaign.</h2><p>When fundraising opens, support for Bibles Within Reach is intended to advance the initiative's Bible-purchasing and distribution mission.</p></div>
+      <div class="three-grid">
+        <div class="info-card card"><h3>Bible purchasing</h3><p>The central purpose of the campaign is purchasing Bibles for free distribution. Supplier pricing, available editions, durability, readability, and quantity will be evaluated closer to launch.</p></div>
+        <div class="info-card card"><h3>Distribution needs</h3><p>Reasonable initiative-related costs may include shipping, packaging, storage, transportation, or materials needed to responsibly get Bibles from the supplier to recipients.</p></div>
+        <div class="info-card card"><h3>Campaign operations</h3><p>As the initiative develops, TPP can disclose the categories of campaign spending used to support the work and distinguish Bible purchases from other necessary initiative expenses.</p></div>
+      </div>
+      <div class="funding-note card"><p><strong>Before fundraising begins:</strong> The Prayer Project plans to publish the official campaign goal, donation instructions, and any final financial disclosures needed for the active campaign. This page currently serves as a pre-launch overview and does not accept donations.</p></div>
     </div></section>
 
     <section id="timeline"><div class="shell">
-      <div class="section-copy"><div class="eyebrow">Campaign Timeline</div><h2 class="section-heading">A six-month path from launch to outreach.</h2><p>The dates below reflect the current plan and may be refined as the initiative gets closer to launch.</p></div>
+      <div class="section-copy"><div class="eyebrow">The Five-Phase Plan</div><h2 class="section-heading">From preparation to measurable outreach.</h2><p>Bibles Within Reach is being built as a process, not a one-day event. The dates below reflect the current plan and may be refined before public launch.</p></div>
       <div class="timeline">
-        <div class="timeline-step card"><strong>Late May 2027</strong><h3>Public launch</h3><p>The Prayer Project formally opens Bibles Within Reach and begins the campaign.</p></div>
-        <div class="timeline-step card"><strong>May–November 2027</strong><h3>Fundraising</h3><p>Support is raised over approximately six months for Bible purchasing and initiative-related distribution needs.</p></div>
-        <div class="timeline-step card"><strong>Late 2027</strong><h3>Bible purchasing</h3><p>After the fundraising period, The Prayer Project begins purchasing Bibles for distribution.</p></div>
-        <div class="timeline-step card"><strong>After purchasing</strong><h3>Distribution</h3><p>Bibles are provided free of charge through organized outreach and distribution efforts.</p></div>
+        <div class="phase-card card"><div class="phase-number">I</div><strong>Now–May 2027</strong><h3>Preparation</h3><p>Develop distribution relationships, evaluate suppliers and Bible options, prepare procedures, and build campaign infrastructure.</p></div>
+        <div class="phase-card card"><div class="phase-number">II</div><strong>Late May–Late Nov. 2027</strong><h3>Fundraising</h3><p>Run the approximately six-month public campaign and share meaningful progress updates as the initiative develops.</p></div>
+        <div class="phase-card card"><div class="phase-number">III</div><strong>Late 2027</strong><h3>Purchasing</h3><p>Evaluate available resources, confirm distribution needs, select appropriate Bibles, and place orders.</p></div>
+        <div class="phase-card card"><div class="phase-number">IV</div><strong>Late 2027 onward</strong><h3>Distribution</h3><p>Provide Bibles free of charge through organized direct outreach and appropriate community relationships.</p></div>
+        <div class="phase-card card"><div class="phase-number">V</div><strong>After distribution begins</strong><h3>Impact Reporting</h3><p>Publish campaign results, distribution totals, milestones, and what TPP learns about continuing the work.</p></div>
       </div>
     </div></section>
 
     <section><div class="shell">
-      <div class="section-copy"><div class="eyebrow">Our Commitments</div><h2 class="section-heading">Free distribution. Clear purpose.</h2></div>
-      <div class="promise-grid">
-        <div class="promise-card card"><h3>Every Bible is given freely</h3><p>Bibles purchased through Bibles Within Reach are intended for free distribution. The initiative is about access to Scripture, not selling it.</p></div>
-        <div class="promise-card card"><h3>Impact will be shared</h3><p>Once the campaign is active and distribution begins, this page can grow to include fundraising progress, updates, Bibles purchased, Bibles distributed, communities served, and outreach milestones.</p></div>
+      <div class="section-copy"><div class="eyebrow">Our Promise</div><h2 class="section-heading">How we intend to carry out the mission.</h2></div>
+      <div class="four-grid">
+        <div class="promise-card card"><h3>Bibles will be free</h3><p>No recipient will be charged for a Bible purchased through Bibles Within Reach.</p></div>
+        <div class="promise-card card"><h3>People come first</h3><p>Distribution should preserve dignity. A person is never just a number on an impact counter.</p></div>
+        <div class="promise-card card"><h3>Support has a purpose</h3><p>Campaign resources are intended to advance Bible purchasing and the reasonable costs needed to carry out distribution.</p></div>
+        <div class="promise-card card"><h3>Results will be shared</h3><p>TPP plans to publish meaningful campaign and distribution information as the initiative moves from fundraising into outreach.</p></div>
       </div>
     </div></section>
 
+    <section id="accountability"><div class="shell">
+      <div class="section-copy"><div class="eyebrow">Campaign Accountability</div><h2 class="section-heading">The page will grow with the campaign.</h2><p>Once fundraising and distribution begin, this section is intended to become a public-facing impact dashboard. The figures below are placeholders until the initiative launches.</p></div>
+      <div class="four-grid">
+        <div class="metric-card card"><span>Funds Raised</span><strong>—</strong><p>Campaign total after public fundraising opens.</p></div>
+        <div class="metric-card card"><span>Bibles Purchased</span><strong>—</strong><p>Total Bibles acquired through the initiative.</p></div>
+        <div class="metric-card card"><span>Bibles Distributed</span><strong>—</strong><p>Total Bibles placed into recipients' hands.</p></div>
+        <div class="metric-card card"><span>Communities Served</span><strong>—</strong><p>Regions, outreach events, or partner communities reached.</p></div>
+      </div>
+      <div class="funding-note card"><p>Future reporting may also include approximate cost per Bible, distribution milestones, campaign expenses by category, remaining initiative resources, and major project updates where appropriate.</p></div>
+    </div></section>
+
+    <section id="participate"><div class="shell">
+      <div class="section-copy"><div class="eyebrow">Ways to Participate</div><h2 class="section-heading">There will be more than one way to help.</h2><p>Financial giving will be only one part of the initiative. Bibles Within Reach will also depend on prayer, volunteers, local knowledge, and relationships with organizations already serving people in their communities.</p></div>
+      <div class="four-grid">
+        <div class="participate-card card"><h3>Pray</h3><p>Pray for the people who will receive Scripture, the volunteers serving them, and wisdom as TPP prepares the initiative.</p></div>
+        <div class="participate-card card"><h3>Volunteer</h3><p>As distribution opportunities are developed, TPP volunteers and chapters may be able to assist with preparation, outreach, and distribution.</p><div class="action-row"><a class="btn btn-secondary" href="https://volunteer.ask4prayers.com/">Volunteer Network</a></div></div>
+        <div class="participate-card card"><h3>Connect a partner</h3><p>Churches, shelters, ministries, and community organizations may eventually help identify responsible distribution opportunities.</p><span class="future-tag">Partner process coming later</span></div>
+        <div class="participate-card card"><h3>Give at launch</h3><p>When the campaign officially opens, this page will provide the approved way to financially support Bibles Within Reach.</p><span class="future-tag">Late May 2027</span></div>
+      </div>
+    </div></section>
+
+    <section><div class="shell split">
+      <aside class="split-side card"><div class="eyebrow">Future Program</div><h2 class="section-heading">Request a Bible.</h2><p>As the initiative matures, TPP can build a public request process for individuals and a separate request process for approved organizations seeking Bibles for distribution.</p></aside>
+      <article class="split-main card"><p>The future request system is intended to make the initiative more responsive instead of relying only on TPP to guess where Bibles are needed. Individual requests could help someone obtain a Bible directly, while organization requests could help churches, shelters, or ministries describe a real distribution need.</p><p>The request process is not active yet. Before it opens, TPP will need to establish availability, fulfillment rules, privacy expectations, distribution capacity, and how requests are prioritized when demand exceeds supply.</p><span class="future-tag">Planned future capability</span></article>
+    </div></section>
+
+    <section id="updates"><div class="shell">
+      <div class="section-copy"><div class="eyebrow">Initiative Updates</div><h2 class="section-heading">Follow the work from preparation to distribution.</h2><p>This section is designed to become the public history of Bibles Within Reach as major milestones happen.</p></div>
+      <div class="updates">
+        <div class="update-item card"><time>August 2026</time><div><h3>Initiative planning published</h3><p>The Prayer Project began publicly outlining the mission, distribution principles, campaign phases, accountability plans, and expected late May 2027 launch.</p></div></div>
+        <div class="update-item card"><time>Next milestone</time><div><h3>Pre-launch preparation</h3><p>Future updates can document supplier selection, distribution partnerships, the official campaign goal, launch information, first Bible order, and first distribution efforts.</p></div></div>
+      </div>
+    </div></section>
+
+    <section id="faq"><div class="shell">
+      <div class="section-copy"><div class="eyebrow">Frequently Asked Questions</div><h2 class="section-heading">What to know before the campaign begins.</h2></div>
+      <div class="faq">
+        <details><summary>When does Bibles Within Reach launch?</summary><p>The current plan is to publicly launch the initiative in late May 2027 and run the fundraising campaign for approximately six months, through late November 2027.</p></details>
+        <details><summary>Can I donate right now?</summary><p>No. This page is currently a pre-launch information page. The Prayer Project will publish the official donation method when the campaign opens.</p></details>
+        <details><summary>Who will receive the Bibles?</summary><p>The initial focus is on people experiencing homelessness, financial hardship, or other barriers to obtaining Scripture, while leaving room to serve others who genuinely need or request a Bible.</p></details>
+        <details><summary>Will recipients have to pay?</summary><p>No. Bibles purchased through Bibles Within Reach are intended to be distributed free of charge to recipients.</p></details>
+        <details><summary>How will Bibles be distributed?</summary><p>TPP plans to use organized direct outreach and appropriate relationships with volunteers, chapters, churches, shelters, ministries, and community organizations where practical. The exact distribution network will continue developing before launch.</p></details>
+        <details><summary>What will campaign support pay for?</summary><p>The central purpose is Bible purchasing. Reasonable initiative-related costs may also include needs such as shipping, packaging, storage, transportation, or other distribution expenses necessary to carry out the program.</p></details>
+        <details><summary>Will TPP publish campaign results?</summary><p>Yes. The initiative page is designed to later display meaningful information such as funds raised, Bibles purchased, Bibles distributed, communities served, and other campaign milestones.</p></details>
+        <details><summary>Can a church or organization request Bibles?</summary><p>Not yet. A partner or organization request process is a planned future capability once TPP establishes fulfillment procedures, availability rules, and distribution capacity.</p></details>
+      </div>
+    </div></section>
+
+    <section><div class="shell ministry-statement card"><div class="eyebrow">Scripture & Ministry</div><h2 class="section-heading">Why Bible distribution belongs within The Prayer Project.</h2><p>The Prayer Project began with prayer: helping people bring burdens before God and reminding them they are not forgotten. Bibles Within Reach carries that same mission into tangible outreach by helping people gain access to the Scriptures that teach, encourage, correct, comfort, and point to Christ.</p><p>This initiative is not meant to replace prayer, local churches, community ministries, or practical assistance. It is one way The Prayer Project can serve alongside them—by making Scripture more accessible and giving people something they can continue reading long after a single outreach interaction ends.</p><div class="quote">“Thy word is a lamp unto my feet, and a light unto my path.”<small>Psalm 119:105</small></div></div></section>
+
     <section class="shell coming-soon card">
-      <div class="eyebrow">Coming in 2027</div>
-      <h2 class="section-heading">Bibles Within Reach is being prepared now.</h2>
-      <p>There is nothing you need to donate through this page today. As the public launch approaches, The Prayer Project will publish the official campaign information and ways to participate.</p>
-      <a class="btn btn-primary" href="index.html">Return to The Prayer Project</a>
-      <p class="fine-print">Planned launch timing and campaign details are subject to change as final initiative preparations are completed.</p>
+      <div class="eyebrow">Coming in 2027</div><h2 class="section-heading">Bibles Within Reach is being built now.</h2><p>The Prayer Project is using the time before launch to develop the initiative responsibly. As late May 2027 approaches, this page can be updated with the official campaign goal, approved donation method, supplier information, partnership opportunities, and launch announcements.</p>
+      <div class="action-row" style="justify-content:center"><a class="btn btn-primary" href="index.html">Return to The Prayer Project</a><a class="btn btn-secondary" href="https://volunteer.ask4prayers.com/">Explore Volunteering</a></div>
+      <p class="fine-print">Planned launch timing, operational details, and campaign procedures may be refined as final preparations are completed.</p>
     </section>
   </main>
 
-  <footer><div class="shell">The Prayer Project exists to encourage, comfort, and remind people that they are not forgotten.<div class="footer-links"><a href="index.html">Home</a><a href="bibles-within-reach.html">Bibles Within Reach</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="login.html">Admin</a></div></div></footer>
+  <footer><div class="shell">The Prayer Project exists to encourage, comfort, and remind people that they are not forgotten.<div class="footer-links"><a href="index.html">Home</a><a href="bibles-within-reach.html">Bibles Within Reach</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="https://volunteer.ask4prayers.com/">Volunteer</a><a href="login.html">Admin</a></div></div></footer>
   <script src="./nav.js"></script>
 </body>
 </html>
