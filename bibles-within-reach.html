@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Bibles Within Reach | The Prayer Project</title>
-  <meta name="description" content="Bibles Within Reach is a Prayer Project initiative preparing for a six-month, $50,000 campaign to purchase Bibles and place them free of charge into the hands of people who want Scripture but may not otherwise have easy access to it.">
+  <meta name="description" content="Bibles Within Reach is a Prayer Project initiative preparing to raise $50,000 over approximately six months to purchase Bibles and place them, free of charge, into the hands of people who want Scripture but may not otherwise be able to obtain one.">
   <meta name="theme-color" content="#000000">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,79 +12,130 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./theme.css">
   <style>
-    :root{--bwr-glow:rgba(216,195,165,.18)}
+    :root{--bwr-gold:#d8c3a5;--bwr-cream:#fff0d2;--bwr-soft:rgba(216,195,165,.11)}
     main{overflow:hidden}
-    section{position:relative;padding:72px 0}
-    .bwr-hero{padding:92px 0 56px;min-height:calc(100vh - 76px);display:flex;align-items:center}
-    .hero-grid{display:grid;grid-template-columns:1.06fr .94fr;gap:54px;align-items:center}
-    .hero-copy{padding:16px 0}
-    .hero-copy h1{max-width:820px;margin-bottom:26px}
+    section{position:relative;padding:82px 0}
+    .bwr-hero{position:relative;min-height:calc(100vh - 76px);display:flex;align-items:center;padding:86px 0 68px}
+    .bwr-hero:before{content:"";position:absolute;inset:-20% -10% auto auto;width:760px;height:760px;border-radius:50%;background:radial-gradient(circle,rgba(216,195,165,.13),rgba(216,195,165,.035) 38%,transparent 68%);filter:blur(6px);pointer-events:none}
+    .hero-grid{display:grid;grid-template-columns:1.08fr .92fr;gap:62px;align-items:center}
+    .hero-copy{position:relative;z-index:2}
+    .hero-copy h1{max-width:850px;font-size:clamp(54px,8vw,98px);margin:24px 0 26px}
     .hero-copy .lead{font-size:19px;max-width:760px}
-    .hero-actions,.action-row{display:flex;gap:13px;flex-wrap:wrap;margin-top:30px}
-    .launch-note{display:flex;align-items:flex-start;gap:12px;margin-top:27px;padding-top:24px;border-top:1px solid rgba(255,255,255,.08);max-width:760px;color:var(--soft);font-size:13px;line-height:1.7}
-    .launch-note-dot{width:9px;height:9px;flex:0 0 9px;margin-top:6px;border-radius:50%;background:var(--warm2);box-shadow:0 0 22px rgba(216,195,165,.55)}
-    .hero-visual{position:relative;min-height:570px;display:grid;place-items:center}
-    .hero-visual:before{content:"";position:absolute;width:430px;height:430px;border-radius:50%;background:radial-gradient(circle,rgba(216,195,165,.18),rgba(216,195,165,.055) 36%,transparent 69%);filter:blur(3px)}
-    .book-stage{position:relative;width:min(100%,500px);height:500px;display:grid;place-items:center}
-    .book-orbit{position:absolute;inset:30px;border:1px solid rgba(216,195,165,.09);border-radius:50%}
-    .book-orbit:before,.book-orbit:after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(216,195,165,.06)}
-    .book-orbit:before{inset:45px}.book-orbit:after{inset:96px}
-    .bible-book{position:relative;width:275px;height:380px;border-radius:10px 23px 23px 10px;background:linear-gradient(145deg,#17130f 0%,#090807 45%,#020202 100%);border:1px solid rgba(216,195,165,.34);box-shadow:-24px 32px 70px rgba(0,0,0,.78),0 0 80px rgba(216,195,165,.09);transform:rotate(-5deg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;z-index:2}
-    .bible-book:before{content:"";position:absolute;right:-10px;top:14px;bottom:14px;width:12px;border-radius:0 8px 8px 0;background:repeating-linear-gradient(180deg,#cdb891 0 2px,#8d7b60 2px 3px);opacity:.72;box-shadow:3px 0 7px rgba(0,0,0,.5)}
-    .bible-book:after{content:"";position:absolute;left:18px;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,rgba(216,195,165,.32),transparent)}
-    .book-cross{position:relative;width:58px;height:82px;margin-bottom:33px;opacity:.86}
-    .book-cross:before,.book-cross:after{content:"";position:absolute;background:linear-gradient(180deg,var(--warm2),var(--warm));border-radius:99px;box-shadow:0 0 26px rgba(216,195,165,.14)}
-    .book-cross:before{width:9px;height:82px;left:24px;top:0}.book-cross:after{width:58px;height:9px;left:0;top:24px}
-    .book-title{font-family:"Playfair Display",serif;color:var(--warm2);font-size:30px;letter-spacing:.08em;line-height:1.05}
-    .book-subtitle{margin-top:13px;color:var(--soft);font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}
-    .visual-note{position:absolute;right:0;bottom:34px;width:230px;padding:18px 20px;border-radius:22px;background:rgba(5,5,5,.88);border:1px solid rgba(216,195,165,.18);box-shadow:0 24px 70px rgba(0,0,0,.56);backdrop-filter:blur(18px);z-index:3}
-    .visual-note strong{display:block;color:var(--warm2);font-family:"Playfair Display",serif;font-size:25px;line-height:1.05;margin-bottom:8px}.visual-note span{color:var(--muted);font-size:12px;line-height:1.65}
-    .journey-nav{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:15px 17px;margin-top:5px;background:rgba(5,5,5,.72)}
-    .journey-nav span{padding:9px 11px;color:var(--soft);font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
-    .journey-nav a{padding:10px 13px;border-radius:999px;color:var(--muted);font-size:12px;font-weight:850;border:1px solid transparent;transition:.2s ease}
-    .journey-nav a:hover{color:var(--text);background:rgba(255,255,255,.05);border-color:var(--line)}
-    .campaign-band{display:grid;grid-template-columns:repeat(4,1fr);margin-top:25px;overflow:hidden}
-    .campaign-stat{padding:27px 26px;border-right:1px solid rgba(255,255,255,.08)}.campaign-stat:last-child{border-right:0}
+    .hero-copy .lead strong{color:var(--text)}
+    .hero-actions{display:flex;gap:13px;flex-wrap:wrap;margin-top:31px}
+    .prelaunch-note{display:flex;gap:13px;align-items:flex-start;margin-top:28px;max-width:760px;padding-top:25px;border-top:1px solid rgba(255,255,255,.085);color:var(--soft);font-size:13px;line-height:1.75}
+    .prelaunch-note i{width:9px;height:9px;border-radius:50%;background:var(--warm2);box-shadow:0 0 24px rgba(216,195,165,.55);flex:0 0 auto;margin-top:7px}
+    .prelaunch-note strong{color:var(--warm2)}
+    .book-scene{position:relative;height:585px;display:grid;place-items:center}
+    .book-halo{position:absolute;width:470px;height:470px;border-radius:50%;border:1px solid rgba(216,195,165,.1);box-shadow:inset 0 0 90px rgba(216,195,165,.03),0 0 120px rgba(216,195,165,.04)}
+    .book-halo:before,.book-halo:after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(216,195,165,.065)}
+    .book-halo:before{inset:44px}.book-halo:after{inset:100px}
+    .book{position:relative;width:330px;height:430px;transform:rotate(-4deg);filter:drop-shadow(-32px 38px 46px rgba(0,0,0,.78));z-index:2}
+    .book-cover{position:absolute;inset:0;border-radius:13px 28px 28px 13px;background:linear-gradient(145deg,#1c1712,#090807 50%,#020202);border:1px solid rgba(216,195,165,.35);display:grid;place-items:center;text-align:center;padding:38px;overflow:hidden}
+    .book-cover:before{content:"";position:absolute;left:22px;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,rgba(216,195,165,.36),transparent)}
+    .book-cover:after{content:"";position:absolute;inset:14px;border-radius:9px 20px 20px 9px;border:1px solid rgba(216,195,165,.08)}
+    .book-pages{position:absolute;right:-12px;top:16px;bottom:16px;width:14px;border-radius:0 8px 8px 0;background:repeating-linear-gradient(180deg,#ead8b5 0 2px,#9f8c6b 2px 3px);opacity:.72}
+    .book-center{position:relative;z-index:2}
+    .cross{position:relative;width:62px;height:88px;margin:0 auto 32px}
+    .cross:before,.cross:after{content:"";position:absolute;border-radius:99px;background:linear-gradient(180deg,var(--warm2),var(--warm));box-shadow:0 0 26px rgba(216,195,165,.12)}
+    .cross:before{width:9px;height:88px;left:26px}.cross:after{width:62px;height:9px;top:27px}
+    .book-title{font-family:"Playfair Display",serif;color:var(--warm2);font-size:33px;letter-spacing:.09em;line-height:1.05}
+    .book-kicker{margin-top:14px;color:var(--soft);font-size:10px;text-transform:uppercase;letter-spacing:.23em;font-weight:900}
+    .scene-note{position:absolute;right:-8px;bottom:34px;width:236px;padding:20px 21px;border-radius:24px;background:rgba(5,5,5,.9);border:1px solid rgba(216,195,165,.2);box-shadow:0 26px 80px rgba(0,0,0,.65);backdrop-filter:blur(18px);z-index:4}
+    .scene-note span{display:block;color:var(--soft);font-size:10px;font-weight:900;letter-spacing:.15em;text-transform:uppercase}
+    .scene-note strong{display:block;margin:8px 0 8px;font-family:"Playfair Display",serif;color:var(--warm2);font-size:28px;line-height:1.05}
+    .scene-note p{margin:0;color:var(--muted);font-size:12px;line-height:1.65}
+    .campaign-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-top:3px;overflow:hidden}
+    .campaign-stat{padding:27px 26px;border-right:1px solid rgba(255,255,255,.08)}
+    .campaign-stat:last-child{border-right:0}
     .campaign-stat span{display:block;color:var(--soft);font-size:10px;font-weight:900;letter-spacing:.15em;text-transform:uppercase}
-    .campaign-stat strong{display:block;font-family:"Playfair Display",serif;color:var(--warm2);font-size:clamp(31px,4vw,44px);line-height:1;margin:12px 0 9px;letter-spacing:-.035em}
+    .campaign-stat strong{display:block;margin:11px 0 8px;color:var(--warm2);font-family:"Playfair Display",serif;font-size:clamp(32px,4vw,45px);letter-spacing:-.035em;line-height:1}
     .campaign-stat p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
-    .section-intro{max-width:880px;margin-bottom:34px}.section-intro .section-heading{margin-top:15px}.section-intro p{color:var(--muted);font-size:17px;line-height:1.9;margin:0}
-    .story-grid{display:grid;grid-template-columns:.92fr 1.08fr;gap:22px;align-items:stretch}
-    .story-anchor,.story-copy{padding:38px}
-    .story-anchor{display:flex;flex-direction:column;justify-content:space-between;min-height:420px;background:radial-gradient(circle at 90% 10%,rgba(216,195,165,.11),transparent 22rem),linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.028))}
-    .story-anchor h2{font-family:"Playfair Display",serif;font-size:clamp(40px,5.5vw,61px);letter-spacing:-.045em;line-height:1.02;margin:18px 0 22px}.story-anchor p{color:var(--muted);line-height:1.85;margin:0}
-    .story-line{margin-top:38px;color:var(--warm2);font-size:13px;font-weight:900;letter-spacing:.05em}
-    .story-copy p{font-size:16px;color:var(--muted);line-height:1.92;margin:0 0 18px}.story-copy p:last-of-type{margin-bottom:0}
-    .scripture{margin-top:28px;padding:24px 25px;border-radius:22px;background:rgba(216,195,165,.065);border:1px solid rgba(216,195,165,.16);font-family:"Playfair Display",serif;color:var(--text);font-size:20px;line-height:1.6}.scripture cite{display:block;margin-top:12px;color:var(--warm);font-family:Inter,sans-serif;font-size:11px;font-style:normal;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
-    .promise-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-    .promise-card{padding:31px;min-height:290px;display:flex;flex-direction:column}
-    .promise-number{font-family:"Playfair Display",serif;font-size:42px;color:var(--warm2);line-height:1;margin-bottom:30px}
-    .promise-card h3{font-size:24px;margin:0 0 12px}.promise-card p{color:var(--muted);line-height:1.8;margin:0}
-    .promise-card .micro{margin-top:auto;padding-top:24px;color:var(--soft);font-size:11px;font-weight:850;line-height:1.6}
-    .goal-section{padding-top:44px}
-    .goal-panel{position:relative;overflow:hidden;padding:48px;display:grid;grid-template-columns:.8fr 1.2fr;gap:46px;align-items:center;background:radial-gradient(circle at 12% 50%,rgba(216,195,165,.13),transparent 25rem),linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.03))}
-    .goal-number{font-family:"Playfair Display",serif;color:var(--warm2);font-size:clamp(74px,10vw,118px);letter-spacing:-.065em;line-height:.85}.goal-number span{display:block;margin-top:15px;color:var(--soft);font-family:Inter,sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:900}
-    .goal-copy h2{font-family:"Playfair Display",serif;font-size:clamp(39px,5vw,58px);line-height:1.02;letter-spacing:-.045em;margin:0 0 17px}.goal-copy p{color:var(--muted);line-height:1.87;margin:0 0 16px}.goal-copy p:last-child{margin-bottom:0}
-    .goal-clarity{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:27px}
-    .goal-clarity div{padding:18px;border-radius:19px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.075)}.goal-clarity strong{display:block;color:var(--warm2);font-size:13px;margin-bottom:7px}.goal-clarity span{color:var(--soft);font-size:11px;line-height:1.55}
-    .human-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-    .human-card{padding:31px;min-height:215px}.human-card .mini-label,.flow-card .mini-label,.timeline-card .mini-label{color:var(--warm);font-size:10px;font-weight:900;letter-spacing:.15em;text-transform:uppercase}.human-card h3{margin:13px 0 10px;font-size:23px}.human-card p{margin:0;color:var(--muted);line-height:1.78}
-    .human-note{margin-top:18px;padding:24px 27px;border-radius:24px;border:1px solid rgba(216,195,165,.16);background:rgba(216,195,165,.05);color:var(--muted);line-height:1.8}.human-note strong{color:var(--warm2)}
-    .flow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;position:relative}
-    .flow-card{padding:28px;min-height:260px}.flow-icon{width:48px;height:48px;display:grid;place-items:center;margin-bottom:27px;border-radius:50%;background:rgba(216,195,165,.08);border:1px solid rgba(216,195,165,.18);color:var(--warm2);font-weight:900}.flow-card h3{margin:12px 0 10px;font-size:21px}.flow-card p{color:var(--muted);font-size:14px;line-height:1.75;margin:0}
-    .distribution-note{margin-top:18px;padding:25px 27px;color:var(--muted);line-height:1.8}.distribution-note strong{color:var(--text)}
-    .timeline-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-    .timeline-card{padding:26px;min-height:280px}.timeline-marker{font-family:"Playfair Display",serif;font-size:35px;color:var(--warm2);line-height:1;margin-bottom:28px}.timeline-card h3{font-size:20px;margin:12px 0 10px}.timeline-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.72}
-    .accountability-grid{display:grid;grid-template-columns:.88fr 1.12fr;gap:20px;align-items:stretch}
-    .accountability-copy{padding:38px}.accountability-copy h2{font-family:"Playfair Display",serif;font-size:clamp(39px,5vw,58px);line-height:1.02;letter-spacing:-.045em;margin:15px 0 18px}.accountability-copy p{color:var(--muted);line-height:1.88;margin:0 0 16px}.accountability-copy p:last-child{margin-bottom:0}
-    .dashboard{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:20px}.dashboard-card{padding:25px;border-radius:22px;background:rgba(0,0,0,.23);border:1px solid rgba(255,255,255,.075)}.dashboard-card span{display:block;color:var(--soft);font-size:9px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}.dashboard-card strong{display:block;font-family:"Playfair Display",serif;color:var(--warm2);font-size:38px;margin:12px 0 8px;line-height:1}.dashboard-card p{margin:0;color:var(--muted);font-size:11px;line-height:1.55}.dashboard-note{grid-column:1/-1;padding:18px 20px;border-radius:19px;background:rgba(216,195,165,.06);border:1px solid rgba(216,195,165,.14);color:var(--soft);font-size:11px;line-height:1.65}
-    .participate-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.participate-card{padding:31px;min-height:260px}.participate-card h3{font-family:"Playfair Display",serif;font-size:31px;letter-spacing:-.03em;margin:17px 0 12px}.participate-card p{margin:0;color:var(--muted);line-height:1.8}.future-tag{display:inline-flex;margin-top:23px;padding:8px 11px;border-radius:999px;background:rgba(216,195,165,.07);border:1px solid rgba(216,195,165,.16);color:var(--warm2);font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
-    .faq{display:grid;gap:11px}.faq details{border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.025));border:1px solid var(--line);overflow:hidden}.faq summary{cursor:pointer;list-style:none;padding:21px 23px;font-weight:900;color:var(--text)}.faq summary::-webkit-details-marker{display:none}.faq summary:after{content:"+";float:right;color:var(--warm2);font-size:21px;line-height:1}.faq details[open] summary:after{content:"–"}.faq details p{padding:0 23px 23px;margin:0;color:var(--muted);line-height:1.8;max-width:900px}
-    .finale{padding:92px 0 100px}.finale-card{padding:58px;text-align:center;background:radial-gradient(circle at 50% 0%,rgba(216,195,165,.16),transparent 25rem),linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.028))}.finale-card h2{font-family:"Playfair Display",serif;font-size:clamp(43px,6.5vw,72px);line-height:1;letter-spacing:-.05em;max-width:900px;margin:18px auto}.finale-card p{max-width:760px;margin:0 auto;color:var(--muted);font-size:17px;line-height:1.9}.finale-card .action-row{justify-content:center}.fine-print{margin-top:20px!important;font-size:11px!important;color:var(--soft)!important;line-height:1.7!important}
+    .chapter-nav{position:sticky;top:86px;z-index:30;display:flex;gap:8px;align-items:center;overflow:auto;padding:12px 14px;margin-top:18px;background:rgba(5,5,5,.82);scrollbar-width:none}
+    .chapter-nav::-webkit-scrollbar{display:none}
+    .chapter-nav span{color:var(--soft);font-size:9px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;padding:0 8px;white-space:nowrap}
+    .chapter-nav a{padding:9px 12px;border-radius:999px;color:var(--muted);font-size:11px;font-weight:850;white-space:nowrap;border:1px solid transparent;transition:.2s ease}
+    .chapter-nav a:hover,.chapter-nav a.active{color:var(--warm2);background:rgba(216,195,165,.08);border-color:rgba(216,195,165,.16)}
+    .section-intro{max-width:880px;margin-bottom:36px}
+    .section-intro .section-heading{margin-top:16px}
+    .section-intro p{margin:0;color:var(--muted);font-size:17px;line-height:1.9}
+    .moment-grid{display:grid;grid-template-columns:.94fr 1.06fr;gap:22px}
+    .moment-quote,.moment-copy{padding:40px}
+    .moment-quote{min-height:440px;display:flex;flex-direction:column;justify-content:space-between;background:radial-gradient(circle at 86% 12%,rgba(216,195,165,.12),transparent 21rem),linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.028))}
+    .moment-quote h2{font-family:"Playfair Display",serif;font-size:clamp(42px,5.5vw,64px);line-height:1.01;letter-spacing:-.045em;margin:18px 0 22px}
+    .moment-quote p{margin:0;color:var(--muted);line-height:1.86}
+    .moment-quote .line{margin-top:38px;color:var(--warm2);font-size:13px;font-weight:900}
+    .moment-copy p{margin:0 0 18px;color:var(--muted);font-size:16px;line-height:1.92}
+    .moment-copy p:last-of-type{margin-bottom:0}
+    .scripture{margin-top:29px;padding:25px 27px;border-radius:23px;background:rgba(216,195,165,.065);border:1px solid rgba(216,195,165,.16);font-family:"Playfair Display",serif;font-size:21px;line-height:1.62;color:var(--text)}
+    .scripture cite{display:block;margin-top:12px;color:var(--warm);font-family:Inter,sans-serif;font-size:10px;font-style:normal;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+    .principles{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .principle{padding:32px;min-height:300px;display:flex;flex-direction:column}
+    .principle .number{font-family:"Playfair Display",serif;color:var(--warm2);font-size:43px;line-height:1;margin-bottom:28px}
+    .principle h3{font-size:24px;margin:0 0 12px}
+    .principle p{margin:0;color:var(--muted);line-height:1.82}
+    .principle small{display:block;margin-top:auto;padding-top:24px;color:var(--soft);font-size:11px;line-height:1.6;font-weight:800}
+    .goal-wrap{padding-top:46px}
+    .goal-panel{display:grid;grid-template-columns:.8fr 1.2fr;gap:48px;align-items:center;padding:50px;background:radial-gradient(circle at 8% 50%,rgba(216,195,165,.14),transparent 26rem),linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.03))}
+    .goal-figure{font-family:"Playfair Display",serif;color:var(--warm2);font-size:clamp(76px,10vw,122px);letter-spacing:-.065em;line-height:.86}
+    .goal-figure span{display:block;margin-top:17px;color:var(--soft);font-family:Inter,sans-serif;font-size:10px;letter-spacing:.19em;text-transform:uppercase;font-weight:900}
+    .goal-copy h2{font-family:"Playfair Display",serif;font-size:clamp(40px,5vw,60px);line-height:1.02;letter-spacing:-.045em;margin:0 0 18px}
+    .goal-copy p{margin:0 0 16px;color:var(--muted);line-height:1.88}
+    .goal-copy p:last-child{margin-bottom:0}
+    .goal-notes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:27px}
+    .goal-notes div{padding:18px;border-radius:19px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.075)}
+    .goal-notes strong{display:block;color:var(--warm2);font-size:13px;margin-bottom:7px}
+    .goal-notes span{color:var(--soft);font-size:11px;line-height:1.55}
+    .people-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .person-card{padding:31px;min-height:214px}
+    .mini-label{color:var(--warm);font-size:10px;font-weight:900;letter-spacing:.15em;text-transform:uppercase}
+    .person-card h3{margin:13px 0 10px;font-size:23px}
+    .person-card p{margin:0;color:var(--muted);line-height:1.8}
+    .dignity-note{margin-top:18px;padding:25px 28px;border-radius:24px;border:1px solid rgba(216,195,165,.17);background:rgba(216,195,165,.055);color:var(--muted);line-height:1.82}
+    .dignity-note strong{color:var(--warm2)}
+    .journey{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .journey-card{padding:29px;min-height:285px}
+    .journey-icon{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;background:rgba(216,195,165,.08);border:1px solid rgba(216,195,165,.19);color:var(--warm2);font-weight:900;margin-bottom:27px}
+    .journey-card h3{font-size:21px;margin:12px 0 10px}
+    .journey-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.77}
+    .roadmap{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+    .roadmap-card{padding:27px;min-height:288px}
+    .roadmap-card .roman{font-family:"Playfair Display",serif;color:var(--warm2);font-size:36px;line-height:1;margin-bottom:28px}
+    .roadmap-card h3{font-size:20px;margin:12px 0 10px}
+    .roadmap-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.73}
+    .transparency-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:20px}
+    .transparency-copy{padding:40px}
+    .transparency-copy h2{font-family:"Playfair Display",serif;font-size:clamp(40px,5vw,59px);letter-spacing:-.045em;line-height:1.02;margin:16px 0 18px}
+    .transparency-copy p{margin:0 0 16px;color:var(--muted);line-height:1.88}
+    .transparency-copy p:last-child{margin-bottom:0}
+    .dashboard{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:20px}
+    .dash-card{padding:25px;border-radius:22px;background:rgba(0,0,0,.23);border:1px solid rgba(255,255,255,.075)}
+    .dash-card span{display:block;color:var(--soft);font-size:9px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+    .dash-card strong{display:block;margin:12px 0 8px;color:var(--warm2);font-family:"Playfair Display",serif;font-size:39px;line-height:1}
+    .dash-card p{margin:0;color:var(--muted);font-size:11px;line-height:1.55}
+    .dash-note{grid-column:1/-1;padding:18px 20px;border-radius:19px;background:rgba(216,195,165,.06);border:1px solid rgba(216,195,165,.14);color:var(--soft);font-size:11px;line-height:1.65}
+    .now-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .now-card{padding:31px;min-height:270px}
+    .now-card h3{font-family:"Playfair Display",serif;font-size:31px;letter-spacing:-.03em;margin:16px 0 12px}
+    .now-card p{margin:0;color:var(--muted);line-height:1.8}
+    .status-tag{display:inline-flex;margin-top:23px;padding:8px 11px;border-radius:999px;background:rgba(216,195,165,.07);border:1px solid rgba(216,195,165,.16);color:var(--warm2);font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+    .faq{display:grid;gap:11px}
+    .faq details{border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.025));border:1px solid var(--line);overflow:hidden}
+    .faq summary{cursor:pointer;list-style:none;padding:21px 23px;font-weight:900;color:var(--text)}
+    .faq summary::-webkit-details-marker{display:none}
+    .faq summary:after{content:"+";float:right;color:var(--warm2);font-size:21px;line-height:1}
+    .faq details[open] summary:after{content:"–"}
+    .faq details p{padding:0 23px 23px;margin:0;color:var(--muted);line-height:1.82;max-width:920px}
+    .finale{padding:98px 0 108px}
+    .finale-card{padding:62px 54px;text-align:center;background:radial-gradient(circle at 50% 0%,rgba(216,195,165,.17),transparent 27rem),linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.028))}
+    .finale-card h2{font-family:"Playfair Display",serif;font-size:clamp(44px,6.7vw,76px);line-height:.99;letter-spacing:-.052em;max-width:930px;margin:19px auto}
+    .finale-card p{max-width:780px;margin:0 auto;color:var(--muted);font-size:17px;line-height:1.9}
+    .finale-actions{display:flex;gap:13px;justify-content:center;flex-wrap:wrap;margin-top:31px}
+    .fine-print{margin-top:21px!important;font-size:11px!important;color:var(--soft)!important;line-height:1.7!important}
     .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(216,195,165,.19),transparent)}
-    @media(max-width:1020px){.timeline-grid{grid-template-columns:repeat(2,1fr)}.timeline-card:last-child{grid-column:1/-1}.flow-grid{grid-template-columns:1fr 1fr}}
-    @media(max-width:900px){section{padding:58px 0}.bwr-hero{min-height:auto;padding:66px 0 38px}.hero-grid,.story-grid,.goal-panel,.accountability-grid{grid-template-columns:1fr}.hero-grid{gap:26px}.hero-visual{min-height:490px}.campaign-band{grid-template-columns:1fr 1fr}.campaign-stat:nth-child(2){border-right:0}.campaign-stat:nth-child(-n+2){border-bottom:1px solid rgba(255,255,255,.08)}.promise-grid,.participate-grid{grid-template-columns:1fr}.promise-card,.participate-card{min-height:auto}.goal-panel{padding:38px}.goal-number{padding-bottom:8px}.goal-clarity{grid-template-columns:1fr}.human-grid{grid-template-columns:1fr}}
-    @media(max-width:620px){.hero-copy .lead{font-size:17px}.hero-actions .btn,.action-row .btn{width:100%}.hero-visual{min-height:420px}.book-stage{height:410px}.bible-book{width:215px;height:300px}.book-cross{transform:scale(.8);margin-bottom:18px}.book-title{font-size:24px}.visual-note{right:4px;bottom:18px;width:185px}.visual-note strong{font-size:21px}.journey-nav{display:none}.campaign-band{grid-template-columns:1fr}.campaign-stat{border-right:0!important;border-bottom:1px solid rgba(255,255,255,.08)!important}.campaign-stat:last-child{border-bottom:0!important}.story-anchor,.story-copy,.accountability-copy{padding:29px}.goal-panel{padding:29px}.flow-grid,.timeline-grid,.dashboard{grid-template-columns:1fr}.timeline-card:last-child,.dashboard-note{grid-column:auto}.flow-card,.timeline-card{min-height:auto}.finale{padding:68px 0}.finale-card{padding:38px 25px}}
+    @media(max-width:1020px){.roadmap{grid-template-columns:repeat(2,1fr)}.roadmap-card:last-child{grid-column:1/-1}.journey{grid-template-columns:1fr 1fr}}
+    @media(max-width:900px){section{padding:62px 0}.bwr-hero{min-height:auto;padding:66px 0 42px}.hero-grid,.moment-grid,.goal-panel,.transparency-grid{grid-template-columns:1fr}.hero-grid{gap:24px}.book-scene{height:500px}.campaign-strip{grid-template-columns:1fr 1fr}.campaign-stat:nth-child(2){border-right:0}.campaign-stat:nth-child(-n+2){border-bottom:1px solid rgba(255,255,255,.08)}.chapter-nav{top:80px}.principles,.now-grid{grid-template-columns:1fr}.principle,.now-card{min-height:auto}.goal-panel{padding:38px}.goal-notes{grid-template-columns:1fr}.people-grid{grid-template-columns:1fr}}
+    @media(max-width:620px){.hero-copy h1{font-size:50px}.hero-copy .lead{font-size:17px}.hero-actions .btn,.finale-actions .btn{width:100%}.book-scene{height:420px}.book-halo{width:355px;height:355px}.book{width:235px;height:318px}.cross{transform:scale(.78);margin-bottom:18px}.book-title{font-size:25px}.scene-note{right:2px;bottom:20px;width:188px}.scene-note strong{font-size:22px}.campaign-strip{grid-template-columns:1fr}.campaign-stat{border-right:0!important;border-bottom:1px solid rgba(255,255,255,.08)!important}.campaign-stat:last-child{border-bottom:0!important}.chapter-nav{display:none}.moment-quote,.moment-copy,.transparency-copy{padding:29px}.goal-panel{padding:29px}.journey,.roadmap,.dashboard{grid-template-columns:1fr}.roadmap-card:last-child,.dash-note{grid-column:auto}.journey-card,.roadmap-card{min-height:auto}.finale{padding:72px 0}.finale-card{padding:40px 25px}}
   </style>
 </head>
 <body>
@@ -95,40 +146,38 @@
       <div class="shell hero-grid">
         <div class="hero-copy">
           <div class="eyebrow">A Prayer Project Initiative • Tulsa, Oklahoma</div>
-          <h1>Putting the Word of God within reach.</h1>
-          <p class="lead">A Bible should not feel like a luxury. Bibles Within Reach is being built to help place Scripture directly into the hands of people who want a Bible of their own but may not have an easy way to get one—freely, respectfully, and one person at a time.</p>
-          <div class="hero-actions"><a class="btn btn-primary" href="#why">Why This Matters</a><a class="btn btn-secondary" href="#how">See How It Will Work</a></div>
-          <div class="launch-note"><span class="launch-note-dot"></span><span><strong>Planned public launch: late May 2027.</strong> The fundraising campaign is planned to continue for approximately six months, through late November 2027. This page is currently pre-launch and is not accepting contributions yet.</span></div>
+          <h1>A Bible should never feel out of reach.</h1>
+          <p class="lead">Sometimes the reason someone does not own a Bible is not complicated. <strong>They want one. They just cannot justify buying one right now.</strong> Bibles Within Reach is being built for that moment—to put Scripture into a person's hands freely, respectfully, and without making them prove they deserve it.</p>
+          <div class="hero-actions"><a class="btn btn-primary" href="#story">See Why This Matters</a><a class="btn btn-secondary" href="#journey">Follow the Journey</a></div>
+          <div class="prelaunch-note"><i></i><span><strong>Planned public launch: late May 2027.</strong> The first fundraising campaign is planned to run for approximately six months, through late November 2027. Bibles Within Reach is still in preparation and is not accepting contributions yet.</span></div>
         </div>
-        <div class="hero-visual" aria-label="A stylized Bible representing the Bibles Within Reach initiative">
-          <div class="book-stage" aria-hidden="true">
-            <div class="book-orbit"></div>
-            <div class="bible-book"><div class="book-cross"></div><div class="book-title">HOLY<br>BIBLE</div><div class="book-subtitle">Within Reach</div></div>
-            <div class="visual-note"><strong>One Bible.<br>One person.</strong><span>No price tag. No pressure. Just Scripture placed within reach.</span></div>
-          </div>
+        <div class="book-scene" aria-label="A stylized Bible representing the Bibles Within Reach initiative">
+          <div class="book-halo" aria-hidden="true"></div>
+          <div class="book" aria-hidden="true"><div class="book-pages"></div><div class="book-cover"><div class="book-center"><div class="cross"></div><div class="book-title">HOLY<br>BIBLE</div><div class="book-kicker">Within Reach</div></div></div></div>
+          <div class="scene-note"><span>The heart of it</span><strong>One Bible.<br>One person.</strong><p>No price tag. No pressure. Something real they can take home and keep.</p></div>
         </div>
       </div>
     </header>
 
-    <div class="shell journey-nav card"><span>Explore</span><a href="#why">Why it matters</a><a href="#mission">The mission</a><a href="#goal">$50K goal</a><a href="#people">Who we serve</a><a href="#how">How it works</a><a href="#timeline">Timeline</a><a href="#accountability">Accountability</a><a href="#faq">FAQ</a></div>
-
-    <div class="shell campaign-band card" aria-label="Bibles Within Reach campaign overview">
-      <div class="campaign-stat"><span>Planned Campaign Goal</span><strong>$50,000</strong><p>A focused goal for Bible purchasing and responsible distribution.</p></div>
+    <div class="shell campaign-strip card" aria-label="Bibles Within Reach campaign overview">
+      <div class="campaign-stat"><span>Planned Goal</span><strong>$50,000</strong><p>A focused first campaign built around purchasing and responsible distribution.</p></div>
       <div class="campaign-stat"><span>Fundraising Window</span><strong>6 months</strong><p>Planned from late May through late November 2027.</p></div>
-      <div class="campaign-stat"><span>First Service Area</span><strong>Tulsa</strong><p>Beginning locally, with direct and community-based outreach.</p></div>
-      <div class="campaign-stat"><span>Cost to Recipients</span><strong>$0</strong><p>Bibles purchased through the initiative will be given freely.</p></div>
+      <div class="campaign-stat"><span>First Service Area</span><strong>Tulsa</strong><p>Beginning locally, through direct outreach and trusted relationships.</p></div>
+      <div class="campaign-stat"><span>Cost to Recipients</span><strong>$0</strong><p>Every Bible purchased through the initiative is intended to be given freely.</p></div>
     </div>
 
-    <section id="why">
-      <div class="shell story-grid">
-        <article class="story-anchor card">
-          <div><div class="eyebrow">Why This Matters</div><h2>Imagine wanting a Bible—and deciding it can wait.</h2><p>For many people, the next purchase has to be food, transportation, rent, medicine, or something their family needs today.</p></div>
-          <div class="story-line">Bibles Within Reach exists for the Bible that keeps getting pushed to “later.”</div>
+    <div class="shell chapter-nav card" aria-label="Bibles Within Reach page navigation"><span>Explore</span><a href="#story">The story</a><a href="#mission">The mission</a><a href="#goal">The goal</a><a href="#people">Who we serve</a><a href="#journey">The journey</a><a href="#timeline">Timeline</a><a href="#transparency">Transparency</a><a href="#now">Right now</a><a href="#faq">FAQ</a></div>
+
+    <section id="story">
+      <div class="shell moment-grid">
+        <article class="moment-quote card">
+          <div><div class="eyebrow">The Moment Behind the Mission</div><h2>What if the Bible is always the thing that has to wait?</h2><p>When every dollar has somewhere more urgent to go, even something deeply wanted can keep getting pushed to next week, next month, or someday.</p></div>
+          <div class="line">Bibles Within Reach exists for that “someday.”</div>
         </article>
-        <article class="story-copy card">
-          <p>The idea behind Bibles Within Reach is simple. If someone wants Scripture, money should not be the thing standing between that person and a Bible they can keep.</p>
-          <p>That is especially meaningful for people experiencing homelessness, families under financial pressure, and others who may not have convenient access to a church, bookstore, online order, or spare money for a Bible. The Prayer Project cannot solve every hardship a person faces, but this is one practical need we can choose to meet.</p>
-          <p>So the goal is not to hand out as many books as possible for a photograph or a number. It is to serve real people with dignity—to offer a Bible freely, without pressure, and to build a program careful enough to keep doing that well.</p>
+        <article class="moment-copy card">
+          <p>Think about someone choosing between groceries and a Bible, bus fare and a Bible, medicine and a Bible, or simply keeping the few dollars they have in their pocket for whatever tomorrow brings. In that situation, not buying a Bible does not mean Scripture matters less. It may simply mean survival matters first.</p>
+          <p>The Prayer Project cannot remove every hardship in a person's life. But we can look at one barrier and say: <strong>this one does not have to stay here.</strong></p>
+          <p>That is the purpose of Bibles Within Reach. Not to create a photo opportunity. Not to count people as numbers. Not to make anyone sit through something before receiving help. The goal is much quieter than that: when someone wants a Bible, we want to be able to place one in their hands and say, “This is yours.”</p>
           <div class="scripture">“Thy word is a lamp unto my feet, and a light unto my path.”<cite>Psalm 119:105</cite></div>
         </article>
       </div>
@@ -138,114 +187,113 @@
 
     <section id="mission">
       <div class="shell">
-        <div class="section-intro"><div class="eyebrow">The Mission</div><h2 class="section-heading">Not just a Bible drive. A way to make access practical.</h2><p>Bibles Within Reach is designed as a focused Prayer Project initiative with a defined campaign, intentional purchasing, organized distribution, and public reporting. The work is meant to be simple enough to understand and careful enough to trust.</p></div>
-        <div class="promise-grid">
-          <article class="promise-card card"><div class="promise-number">01</div><h3>Raise support with a purpose.</h3><p>The public campaign will have one clear mission: help make Bibles available to people who may otherwise have difficulty obtaining one.</p><div class="micro">Planned campaign window: late May–late November 2027.</div></article>
-          <article class="promise-card card"><div class="promise-number">02</div><h3>Purchase intentionally.</h3><p>The Prayer Project will consider price, readability, durability, quantity, shipping, and real distribution capacity before placing Bible orders.</p><div class="micro">Supplier and final purchasing details will be published when arrangements are finalized.</div></article>
-          <article class="promise-card card"><div class="promise-number">03</div><h3>Give every Bible freely.</h3><p>Bibles will be placed into the hands of people who want them through direct outreach and appropriate local relationships, without charging recipients.</p><div class="micro">A person is never a campaign statistic. Dignity comes first.</div></article>
+        <div class="section-intro"><div class="eyebrow">The Mission</div><h2 class="section-heading">Simple enough to explain in one sentence.</h2><p>Raise support, purchase Bibles carefully, and give them to people who want Scripture but face a real financial or practical barrier to getting a Bible of their own.</p></div>
+        <div class="principles">
+          <article class="principle card"><div class="number">01</div><h3>Wanted, not forced.</h3><p>Bibles Within Reach is for people who want Scripture. Distribution should feel like an invitation, never a condition, a sales pitch, or pressure.</p><small>Receiving a Bible should always be voluntary.</small></article>
+          <article class="principle card"><div class="number">02</div><h3>Free means free.</h3><p>A Bible purchased through this initiative is intended to be placed with a recipient at no cost. No fee. No repayment. No catch.</p><small>The point is to remove a barrier, not replace it with another one.</small></article>
+          <article class="principle card"><div class="number">03</div><h3>Dignity before numbers.</h3><p>A successful campaign is not just a large total. It is careful stewardship, meaningful distribution, and people being treated like people at every step.</p><small>Impact matters more than optics.</small></article>
         </div>
       </div>
     </section>
 
-    <section id="goal" class="goal-section">
+    <section id="goal" class="goal-wrap">
       <div class="shell goal-panel card">
-        <div class="goal-number">$50K<span>Planned first campaign goal</span></div>
+        <div class="goal-figure">$50K<span>Planned first campaign goal</span></div>
         <div class="goal-copy">
-          <div class="eyebrow">A Big Goal. A Simple Purpose.</div>
+          <div class="eyebrow">A Big Goal With a Clear Purpose</div>
           <h2>Turn generosity into Bibles people can actually hold.</h2>
-          <p>The planned goal for the first Bibles Within Reach campaign is <strong>$50,000</strong>. That target is intended to give the initiative enough room to purchase Bibles at meaningful scale while also supporting the reasonable work required to move them from a supplier into real distribution.</p>
-          <p>The Prayer Project will not pretend every dollar equals a fixed number of Bibles before supplier pricing, shipping, quantities, and distribution needs are final. Before fundraising opens, this page will be updated with the approved campaign details so supporters know what the goal is designed to accomplish.</p>
-          <div class="goal-clarity"><div><strong>Bibles first</strong><span>Bible purchasing is the heart of the campaign.</span></div><div><strong>Distribution matters</strong><span>Shipping, transport, storage, and related needs may be part of carrying out the mission responsibly.</span></div><div><strong>Results will be public</strong><span>Campaign and distribution totals will be shared as the initiative moves forward.</span></div></div>
+          <p>The planned goal for the first Bibles Within Reach campaign is <strong>$50,000</strong>. The heart of that goal is Bible purchasing, with enough room to carry out the work responsibly from supplier to distribution.</p>
+          <p>We are intentionally not promising a fixed “one dollar equals this many Bibles” formula before final supplier pricing, shipping, quantities, storage, and distribution needs are approved. Before the campaign opens, the page will be updated with finalized purchasing and support details.</p>
+          <div class="goal-notes"><div><strong>Bibles first</strong><span>Purchasing Scripture is the central purpose of the campaign.</span></div><div><strong>Real logistics</strong><span>Shipping, transport, packaging, storage, and related needs may be part of responsible distribution.</span></div><div><strong>Public results</strong><span>Meaningful campaign and distribution totals will be shared as the initiative moves forward.</span></div></div>
         </div>
       </div>
     </section>
 
     <section id="people">
       <div class="shell">
-        <div class="section-intro"><div class="eyebrow">Who We Hope to Reach</div><h2 class="section-heading">People first. Always.</h2><p>The first campaign will begin in Tulsa and focus on people for whom access to a Bible may genuinely be difficult. The categories below help define the mission, but they do not reduce anyone to a label.</p></div>
-        <div class="human-grid">
-          <article class="human-card card"><div class="mini-label">Direct Outreach</div><h3>People experiencing homelessness</h3><p>The Prayer Project plans to create opportunities in Tulsa to offer Bibles directly to people experiencing homelessness who want Scripture of their own.</p></article>
-          <article class="human-card card"><div class="mini-label">Families & Individuals</div><h3>People facing financial hardship</h3><p>When money is tight, a Bible can easily become a purchase that has to wait. This initiative exists to help remove that barrier.</p></article>
-          <article class="human-card card"><div class="mini-label">Local Relationships</div><h3>People already served by trusted organizations</h3><p>Churches and appropriate community organizations may help identify genuine needs and place Bibles with people and families they already know and serve.</p></article>
-          <article class="human-card card"><div class="mini-label">Access</div><h3>Others who simply do not have an easy way to get one</h3><p>The mission is not limited to one circumstance. When there is a real barrier and a real desire for Scripture, Bibles Within Reach should be able to respond responsibly.</p></article>
+        <div class="section-intro"><div class="eyebrow">Who We Hope to Reach</div><h2 class="section-heading">People first. Always.</h2><p>Tulsa will be the first service area. The categories below help define where Bibles Within Reach can begin, but nobody should ever feel reduced to a category in order to receive Scripture.</p></div>
+        <div class="people-grid">
+          <article class="person-card card"><div class="mini-label">Direct Outreach</div><h3>People experiencing homelessness</h3><p>We plan to create opportunities to offer Bibles directly to people experiencing homelessness who want Scripture they can keep.</p></article>
+          <article class="person-card card"><div class="mini-label">Financial Barriers</div><h3>Individuals and families under pressure</h3><p>When money is tight, a Bible can become a purchase that keeps getting postponed. This initiative exists to help remove that barrier.</p></article>
+          <article class="person-card card"><div class="mini-label">Local Relationships</div><h3>People served by trusted organizations</h3><p>Churches and appropriate community organizations may help identify genuine needs and place Bibles with people they already know and serve.</p></article>
+          <article class="person-card card"><div class="mini-label">Access</div><h3>Anyone facing a real barrier to obtaining one</h3><p>The mission is not limited to one circumstance. When someone genuinely wants a Bible and access is difficult, Bibles Within Reach should be able to respond responsibly.</p></article>
         </div>
-        <div class="human-note"><strong>Always voluntary.</strong> No one should be pressured to receive a Bible, photographed as a condition of receiving one, or required to participate in another activity. The goal is access to Scripture with dignity and respect.</div>
+        <div class="dignity-note"><strong>No pressure. No required photo. No performance.</strong> No one should be pressured to receive a Bible, photographed as a condition of receiving one, or required to participate in another activity first. The point is access to Scripture with dignity and respect.</div>
       </div>
     </section>
 
     <div class="shell divider"></div>
 
-    <section id="how">
+    <section id="journey">
       <div class="shell">
-        <div class="section-intro"><div class="eyebrow">How It Will Work</div><h2 class="section-heading">From a campaign goal to a Bible in someone's hands.</h2><p>The process should be easy for the public to understand. Bibles Within Reach is being built around a straightforward path from identifying real needs to purchasing, distributing, and reporting what happened.</p></div>
-        <div class="flow-grid">
-          <article class="flow-card card"><div class="flow-icon">1</div><div class="mini-label">Listen</div><h3>Identify genuine needs</h3><p>Direct outreach and trusted local relationships help The Prayer Project understand where Bibles are actually wanted and useful.</p></article>
-          <article class="flow-card card"><div class="flow-icon">2</div><div class="mini-label">Prepare</div><h3>Purchase responsibly</h3><p>Available resources, Bible options, supplier pricing, readability, durability, quantities, and distribution capacity are considered before ordering.</p></article>
-          <article class="flow-card card"><div class="flow-icon">3</div><div class="mini-label">Place</div><h3>Distribute in two ways</h3><p>Some Bibles will be handed out directly through Prayer Project outreach in Tulsa; others may be placed through approved local organizations.</p></article>
-          <article class="flow-card card"><div class="flow-icon">4</div><div class="mini-label">Report</div><h3>Show what happened</h3><p>Purchasing and distribution totals will be tracked so supporters can see the campaign move from funding to tangible outreach.</p></article>
+        <div class="section-intro"><div class="eyebrow">The Journey of a Bible</div><h2 class="section-heading">From a campaign goal to someone's hands.</h2><p>The process should be understandable from the outside. Bibles Within Reach is being built around a straightforward path from listening to a need to reporting what happened.</p></div>
+        <div class="journey">
+          <article class="journey-card card"><div class="journey-icon">1</div><div class="mini-label">Listen</div><h3>Find where Bibles are actually wanted.</h3><p>Direct outreach and trusted local relationships help us understand where there is genuine interest and genuine need.</p></article>
+          <article class="journey-card card"><div class="journey-icon">2</div><div class="mini-label">Prepare</div><h3>Purchase with care.</h3><p>Price, readability, durability, quantities, shipping, and real distribution capacity all matter before an order is placed.</p></article>
+          <article class="journey-card card"><div class="journey-icon">3</div><div class="mini-label">Place</div><h3>Give the Bible away.</h3><p>Some Bibles may be distributed directly through Prayer Project outreach; others may be placed through approved local partners.</p></article>
+          <article class="journey-card card"><div class="journey-icon">4</div><div class="mini-label">Report</div><h3>Let the public see the outcome.</h3><p>Purchasing and distribution totals will be tracked so supporters can follow the path from fundraising to real-world outreach.</p></article>
         </div>
-        <div class="distribution-note card"><strong>About schools and school-affiliated programs:</strong> Any distribution involving a school or school-affiliated setting will happen only where participation is appropriate and permitted. Bibles Within Reach is intended to make Scripture available to people who want it—not to pressure anyone to receive it.</div>
       </div>
     </section>
 
     <section id="timeline">
       <div class="shell">
-        <div class="section-intro"><div class="eyebrow">The Road to Launch</div><h2 class="section-heading">Built carefully before it is built publicly.</h2><p>The initiative is in preparation now. The current timeline gives Bibles Within Reach time to establish the pieces that need to be ready before a public campaign begins.</p></div>
-        <div class="timeline-grid">
-          <article class="timeline-card card"><div class="timeline-marker">I</div><div class="mini-label">Now–May 2027</div><h3>Prepare</h3><p>Develop program procedures, refine distribution plans, evaluate Bible purchasing options, and build local relationships.</p></article>
-          <article class="timeline-card card"><div class="timeline-marker">II</div><div class="mini-label">Late May 2027</div><h3>Launch</h3><p>Open the public campaign with the approved support method, finalized campaign information, and clear public goals.</p></article>
-          <article class="timeline-card card"><div class="timeline-marker">III</div><div class="mini-label">May–Nov. 2027</div><h3>Build</h3><p>Run the approximately six-month campaign, share meaningful milestones, and continue preparing for distribution.</p></article>
-          <article class="timeline-card card"><div class="timeline-marker">IV</div><div class="mini-label">Late 2027 onward</div><h3>Place Bibles</h3><p>Purchase Bibles and begin direct Tulsa outreach and approved local placement as resources and capacity allow.</p></article>
-          <article class="timeline-card card"><div class="timeline-marker">V</div><div class="mini-label">As distribution grows</div><h3>Report the impact</h3><p>Publish meaningful campaign totals, distribution milestones, lessons learned, and plans for what comes next.</p></article>
+        <div class="section-intro"><div class="eyebrow">The Road to Launch</div><h2 class="section-heading">Build it carefully before asking people to believe in it.</h2><p>The initiative is in preparation now. The timeline is designed to give Bibles Within Reach time to establish the pieces that should be ready before public fundraising begins.</p></div>
+        <div class="roadmap">
+          <article class="roadmap-card card"><div class="roman">I</div><div class="mini-label">Now–May 2027</div><h3>Prepare</h3><p>Develop procedures, refine distribution plans, evaluate purchasing options, and build local relationships.</p></article>
+          <article class="roadmap-card card"><div class="roman">II</div><div class="mini-label">Late May 2027</div><h3>Launch</h3><p>Open the public campaign with approved support methods, finalized campaign details, and a clear public goal.</p></article>
+          <article class="roadmap-card card"><div class="roman">III</div><div class="mini-label">May–Nov. 2027</div><h3>Build</h3><p>Run the approximately six-month campaign, share meaningful milestones, and prepare for distribution.</p></article>
+          <article class="roadmap-card card"><div class="roman">IV</div><div class="mini-label">Late 2027 onward</div><h3>Place Bibles</h3><p>Purchase Bibles and begin direct Tulsa outreach and approved local placement as resources and capacity allow.</p></article>
+          <article class="roadmap-card card"><div class="roman">V</div><div class="mini-label">As the work grows</div><h3>Show the impact</h3><p>Publish meaningful totals, distribution milestones, lessons learned, and what comes next.</p></article>
         </div>
       </div>
     </section>
 
-    <section id="accountability">
-      <div class="shell accountability-grid">
-        <article class="accountability-copy card">
-          <div class="eyebrow">Accountability</div><h2>This page should tell the story with numbers, too.</h2>
-          <p>Once the campaign begins, Bibles Within Reach will not stay a static information page. It is designed to become a public window into the initiative.</p>
-          <p>Supporters should be able to come back and see what has happened: how much has been raised, how many Bibles have been purchased, how many have been distributed, and how the work is expanding.</p>
-          <p>Until the campaign opens, the dashboard intentionally shows no manufactured progress. Real numbers will replace the placeholders when there are real results to report.</p>
+    <section id="transparency">
+      <div class="shell transparency-grid">
+        <article class="transparency-copy card">
+          <div class="eyebrow">Transparency</div>
+          <h2>This page should become a window, not a brochure.</h2>
+          <p>Once fundraising begins, Bibles Within Reach should not remain a static page full of promises. It should show movement.</p>
+          <p>Supporters should be able to come back and see what has happened: funds raised, Bibles purchased, Bibles distributed, locations reached, and major milestones along the way.</p>
+          <p>For now, the dashboard intentionally shows no invented progress. Real numbers will appear when there are real numbers to report.</p>
         </article>
         <aside class="dashboard card" aria-label="Future Bibles Within Reach public dashboard">
-          <div class="dashboard-card"><span>Funds Raised</span><strong>—</strong><p>Public total after the campaign opens.</p></div>
-          <div class="dashboard-card"><span>Bibles Purchased</span><strong>—</strong><p>Total Bibles acquired through the initiative.</p></div>
-          <div class="dashboard-card"><span>Bibles Distributed</span><strong>—</strong><p>Direct outreach plus approved local placement.</p></div>
-          <div class="dashboard-card"><span>Locations Reached</span><strong>—</strong><p>Outreach locations and participating distribution points.</p></div>
-          <div class="dashboard-note">Future reporting may also include campaign expense categories, approximate cost per Bible, direct-versus-partner distribution totals, remaining initiative resources, and other meaningful milestones where appropriate.</div>
+          <div class="dash-card"><span>Funds Raised</span><strong>—</strong><p>Public total after the campaign officially opens.</p></div>
+          <div class="dash-card"><span>Bibles Purchased</span><strong>—</strong><p>Total Bibles acquired through the initiative.</p></div>
+          <div class="dash-card"><span>Bibles Distributed</span><strong>—</strong><p>Direct outreach plus approved local placement.</p></div>
+          <div class="dash-card"><span>Locations Reached</span><strong>—</strong><p>Outreach locations and participating distribution points.</p></div>
+          <div class="dash-note">Future reporting may also include major expense categories, approximate cost per Bible, direct-versus-partner distribution totals, remaining initiative resources, and other useful milestones where appropriate.</div>
         </aside>
       </div>
     </section>
 
     <div class="shell divider"></div>
 
-    <section id="participate">
+    <section id="now">
       <div class="shell">
-        <div class="section-intro"><div class="eyebrow">Before the First Dollar</div><h2 class="section-heading">You can be part of this before fundraising begins.</h2><p>The campaign is not open yet, but the mission is already taking shape. Prayer, local knowledge, and thoughtful relationships matter before a single Bible is ordered.</p></div>
-        <div class="participate-grid">
-          <article class="participate-card card"><div class="mini-label">01</div><h3>Pray.</h3><p>Pray for the people who will receive Scripture, for wisdom in every decision, and for this initiative to serve people with humility rather than simply chase a number.</p><span class="future-tag">Available now</span></article>
-          <article class="participate-card card"><div class="mini-label">02</div><h3>Connect.</h3><p>Local churches and community organizations that already know and serve people in Tulsa may become an important part of responsible distribution.</p><span class="future-tag">Partner process coming later</span></article>
-          <article class="participate-card card"><div class="mini-label">03</div><h3>Give later.</h3><p>When the public campaign opens, this page will provide the approved way to financially support Bibles Within Reach and follow the campaign's progress.</p><span class="future-tag">Planned late May 2027</span></article>
+        <div class="section-intro"><div class="eyebrow">Right Now</div><h2 class="section-heading">The campaign has not started. The work already has.</h2><p>There is no donate button yet on purpose. Before the first dollar is raised, Bibles Within Reach needs prayer, thoughtful preparation, and relationships with people who understand the needs of Tulsa firsthand.</p></div>
+        <div class="now-grid">
+          <article class="now-card card"><div class="mini-label">01</div><h3>Pray.</h3><p>Pray for wisdom, for the people who will eventually receive Scripture, and for this initiative to stay humble, useful, and faithful to its purpose.</p><span class="status-tag">Available now</span></article>
+          <article class="now-card card"><div class="mini-label">02</div><h3>Connect.</h3><p>Local churches and community organizations that already know and serve people in Tulsa may become an important part of responsible distribution.</p><span class="status-tag">Relationships in development</span></article>
+          <article class="now-card card"><div class="mini-label">03</div><h3>Give later.</h3><p>When the public campaign officially opens, this page will provide the approved way to support Bibles Within Reach and follow the campaign's progress.</p><span class="status-tag">Planned late May 2027</span></article>
         </div>
       </div>
     </section>
 
     <section id="faq">
       <div class="shell">
-        <div class="section-intro"><div class="eyebrow">Frequently Asked Questions</div><h2 class="section-heading">A few things worth knowing.</h2></div>
+        <div class="section-intro"><div class="eyebrow">Frequently Asked Questions</div><h2 class="section-heading">The things worth knowing before launch.</h2></div>
         <div class="faq">
           <details><summary>What is Bibles Within Reach?</summary><p>Bibles Within Reach is a Prayer Project initiative being developed to raise support, purchase Bibles, and provide them free of charge to people who want Scripture but may face financial or practical barriers to obtaining a Bible of their own.</p></details>
-          <details><summary>When does the campaign begin?</summary><p>The current plan is to publicly launch in late May 2027 and run the fundraising campaign for approximately six months, through late November 2027.</p></details>
-          <details><summary>What is the campaign goal?</summary><p>The planned first-campaign goal is $50,000. Final purchasing, supplier, financial, and distribution details will be published before the public campaign opens.</p></details>
-          <details><summary>Can I contribute right now?</summary><p>No. This page is currently a pre-launch information page and is not accepting contributions for Bibles Within Reach yet. The approved support method will be published when the campaign officially opens.</p></details>
-          <details><summary>Where will the first Bibles go?</summary><p>Tulsa, Oklahoma is the initiative's first service area. The plan includes direct in-person outreach and appropriate placement with trusted local churches or community organizations that already serve people and families who may need a Bible.</p></details>
-          <details><summary>Who will receive the Bibles?</summary><p>The first campaign will focus especially on people experiencing homelessness, families or individuals facing financial hardship, and others who genuinely want a Bible but do not have easy access to one.</p></details>
-          <details><summary>Will anyone have to pay for a Bible?</summary><p>No. Bibles purchased through Bibles Within Reach are intended to be distributed free of charge to recipients.</p></details>
-          <details><summary>Will anyone be pressured to accept a Bible?</summary><p>No. Distribution should be voluntary and respectful. No person should be pressured to receive a Bible or required to participate in another activity as a condition of receiving one.</p></details>
-          <details><summary>What will campaign support be used for?</summary><p>Bible purchasing is the central purpose of the campaign. Reasonable initiative-related needs may also include shipping, packaging, storage, transportation, or other costs necessary to move Bibles from a supplier into responsible distribution. Final campaign details will be disclosed before launch.</p></details>
-          <details><summary>Will The Prayer Project show what the campaign accomplished?</summary><p>Yes. This page is designed to become an impact dashboard once the campaign begins, with meaningful information such as funds raised, Bibles purchased, Bibles distributed, locations reached, and major initiative milestones.</p></details>
+          <details><summary>When does the campaign begin?</summary><p>The current plan is to publicly launch in late May 2027 and run the first fundraising campaign for approximately six months, through late November 2027.</p></details>
+          <details><summary>What is the campaign goal?</summary><p>The planned first-campaign goal is $50,000. Final purchasing, supplier, financial, and distribution details will be published before public fundraising opens.</p></details>
+          <details><summary>Can I donate right now?</summary><p>No. Bibles Within Reach is still in pre-launch development and this page is not accepting contributions yet. The approved support method will be published when the campaign officially opens.</p></details>
+          <details><summary>Who will receive the Bibles?</summary><p>The first campaign will focus especially on people experiencing homelessness, individuals and families facing financial hardship, and others who genuinely want a Bible but do not have an easy way to obtain one.</p></details>
+          <details><summary>Where will the first Bibles go?</summary><p>Tulsa, Oklahoma is the first planned service area. Distribution may include direct Prayer Project outreach and appropriate placement through trusted local churches or community organizations.</p></details>
+          <details><summary>Will anyone have to pay or participate in something first?</summary><p>No. Bibles purchased through the initiative are intended to be given free of charge, voluntarily, and respectfully. A recipient should not be required to pay, pose for a photo, attend an event, or participate in another activity as a condition of receiving one.</p></details>
+          <details><summary>What will campaign support be used for?</summary><p>Bible purchasing is the central purpose. Reasonable initiative-related needs may also include shipping, packaging, storage, transportation, or other costs necessary to move Bibles from a supplier into responsible distribution. Final campaign details will be disclosed before launch.</p></details>
+          <details><summary>How will I know what the campaign accomplished?</summary><p>This page is designed to become a public impact dashboard after launch. Meaningful totals such as funds raised, Bibles purchased, Bibles distributed, locations reached, and major milestones will be added as the work progresses.</p></details>
         </div>
       </div>
     </section>
@@ -253,9 +301,9 @@
     <section class="finale">
       <div class="shell finale-card card">
         <div class="eyebrow">Bibles Within Reach • 2027</div>
-        <h2>The first Bible handed to someone will begin long before that moment.</h2>
-        <p>It begins with prayer. With careful planning. With people deciding that access to Scripture matters. And eventually, Lord willing, it ends with someone opening a Bible that is finally theirs to keep.</p>
-        <div class="action-row"><a class="btn btn-primary" href="index.html#submit">Share a Prayer Request</a><a class="btn btn-secondary" href="index.html">Return to The Prayer Project</a></div>
+        <h2>Someday, someone will open a Bible that is finally theirs.</h2>
+        <p>That moment begins long before the cover opens. It begins with prayer, careful planning, generous people, and a decision that access to Scripture is worth doing well. Bibles Within Reach is being built for that moment.</p>
+        <div class="finale-actions"><a class="btn btn-primary" href="index.html#submit">Share a Prayer Request</a><a class="btn btn-secondary" href="index.html">Return to The Prayer Project</a></div>
         <p class="fine-print">Bibles Within Reach is in pre-launch development. Planned dates, campaign procedures, supplier arrangements, distribution details, and other operational information may be refined before the public campaign begins.</p>
       </div>
     </section>
@@ -263,5 +311,18 @@
 
   <footer><div class="shell">The Prayer Project exists to encourage, comfort, and remind people that they are not forgotten.<div class="footer-links"><a href="index.html">Home</a><a href="bibles-within-reach.html">Bibles Within Reach</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="https://volunteer.ask4prayers.com/">Volunteer</a><a href="login.html">Admin</a></div></div></footer>
   <script src="./nav.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded",()=>{
+      const links=[...document.querySelectorAll(".chapter-nav a")];
+      const sections=links.map(link=>document.querySelector(link.getAttribute("href"))).filter(Boolean);
+      if(!links.length||!sections.length||!("IntersectionObserver" in window)) return;
+      const observer=new IntersectionObserver(entries=>{
+        const visible=entries.filter(entry=>entry.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
+        if(!visible) return;
+        links.forEach(link=>link.classList.toggle("active",link.getAttribute("href")===`#${visible.target.id}`));
+      },{rootMargin:"-28% 0px -58% 0px",threshold:[0,.15,.35,.6]});
+      sections.forEach(section=>observer.observe(section));
+    });
+  </script>
 </body>
 </html>
