@@ -3,72 +3,354 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ============================================================
-    // AUTHORIZATION HELPERS
-    // ============================================================
+    // ========================================================================
+    // THE PRAYER PROJECT — CANONICAL CLOUD FIRESTORE SECURITY RULES
+    // ========================================================================
+    // Shared by:
+    //   • ask4prayers.com
+    //   • The Prayer Project admin dashboard
+    //   • volunteer.ask4prayers.com
+    //   • Volunteer Network administration / training / chapters / service
+    //   • Bibles Within Reach applications and future operating records
+    //
+    // SECURITY PRINCIPLES
+    //   1. Authentication proves identity; it does not automatically grant
+    //      administrative power.
+    //   2. Public forms may create only exact, validated schemas.
+    //   3. Volunteers may act only on records tied to their authenticated UID
+    //      and only within their assigned lifecycle / permissions.
+    //   4. Volunteer limited-admin authority is intentionally separate from
+    //      Prayer Project core-admin authority.
+    //   5. Privilege-bearing fields are never self-service.
+    //   6. Audit records are append-only.
+    //   7. Unknown collections are denied by default.
+    //
+    // This is the canonical ruleset. Keep the copy in
+    // Silly-Cheese/prayer-project-volunteer synchronized with this file.
+    // ========================================================================
+
+
+    // ========================================================================
+    // SECTION 1 — AUTHENTICATION / IDENTITY
+    // ========================================================================
 
     function signedIn() {
       return request.auth != null;
     }
 
+    function currentUid() {
+      return signedIn()
+        ? request.auth.uid
+        : '';
+    }
+
+    function hasEmailClaim() {
+      return signedIn()
+        && ('email' in request.auth.token)
+        && request.auth.token.email is string;
+    }
+
+    function currentEmail() {
+      return hasEmailClaim()
+        ? request.auth.token.email
+        : '';
+    }
+
     function isOwner() {
-      return signedIn()
-        && request.auth.token.email == 'christophershelley257@gmail.com';
-    }
-
-    function hasActiveAdminRecord() {
-      return signedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
-    }
-
-    function isAdmin() {
-      return isOwner() || hasActiveAdminRecord();
+      return hasEmailClaim()
+        && currentEmail() == 'christophershelley257@gmail.com';
     }
 
     function isSelf(uid) {
-      return signedIn() && request.auth.uid == uid;
+      return signedIn()
+        && currentUid() == uid;
     }
 
-    // ============================================================
-    // GENERIC VALIDATION HELPERS
-    // ============================================================
-
-    function verifyFields(required, optional) {
-      let allowed = required.concat(optional);
-      return request.resource.data.keys().hasAll(required)
-        && request.resource.data.keys().hasOnly(allowed);
+    function adminRecordExists() {
+      return signedIn()
+        && exists(
+          /databases/$(database)/documents/admins/$(currentUid())
+        );
     }
 
-    function textBetween(value, min, max) {
+    function adminRecordActive() {
+      return adminRecordExists()
+        && (
+          !(
+            'active' in get(
+              /databases/$(database)/documents/admins/$(currentUid())
+            ).data
+          )
+          || get(
+            /databases/$(database)/documents/admins/$(currentUid())
+          ).data.active == true
+        );
+    }
+
+    function isCoreAdmin() {
+      return isOwner()
+        || adminRecordActive();
+    }
+
+
+    // ========================================================================
+    // SECTION 2 — GENERIC VALIDATION HELPERS
+    // ========================================================================
+
+    function verifyFields(requiredFields, optionalFields) {
+      let allowedFields = requiredFields.concat(optionalFields);
+      return request.resource.data.keys().hasAll(requiredFields)
+        && request.resource.data.keys().hasOnly(allowedFields);
+    }
+
+    function textBetween(value, minLength, maxLength) {
       return value is string
-        && value.size() >= min
-        && value.size() <= max;
+        && value.size() >= minLength
+        && value.size() <= maxLength;
     }
 
-    function textAtMost(value, max) {
-      return value is string && value.size() <= max;
+    function textAtMost(value, maxLength) {
+      return value is string
+        && value.size() <= maxLength;
     }
 
-    function freshCreateTimestamps() {
+    function nonNegativeInt(value) {
+      return value is int
+        && value >= 0;
+    }
+
+    function positiveInt(value) {
+      return value is int
+        && value > 0;
+    }
+
+    function nonNegativeNumber(value) {
+      return value is number
+        && value >= 0;
+    }
+
+    function validCreatedAt() {
+      return request.resource.data.createdAt == request.time;
+    }
+
+    function validUpdatedAt() {
+      return request.resource.data.updatedAt == request.time;
+    }
+
+    function validCreateTimestamps() {
       return request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
     }
 
-    function freshUpdateTimestamp() {
-      return request.resource.data.updatedAt == request.time;
+    function changedOnly(allowedFields) {
+      return request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
+        .hasOnly(allowedFields);
     }
 
-    function reporterNotBanned(emailKey) {
-      return !exists(/databases/$(database)/documents/report_bans/$(emailKey))
-        || get(/databases/$(database)/documents/report_bans/$(emailKey)).data.active == false;
+    function statusIn(value, allowedStatuses) {
+      return value is string
+        && value in allowedStatuses;
     }
 
-    // ============================================================
-    // PUBLIC PRAYER WALL
-    // ============================================================
 
-    function validPrayerCreate() {
+    // ========================================================================
+    // SECTION 3 — VOLUNTEER IDENTITY / PERMISSION MODEL
+    // ========================================================================
+
+    function volunteerProfileExists() {
+      return signedIn()
+        && exists(
+          /databases/$(database)/documents/volunteers/$(currentUid())
+        );
+    }
+
+    function currentVolunteer() {
+      return get(
+        /databases/$(database)/documents/volunteers/$(currentUid())
+      ).data;
+    }
+
+    function volunteerHasPermission(permissionName) {
+      return volunteerProfileExists()
+        && currentVolunteer().permissions is list
+        && currentVolunteer().permissions.hasAny([permissionName]);
+    }
+
+    function isLimitedVolunteerAdmin() {
+      return volunteerHasPermission('admin:limited');
+    }
+
+    function isVolunteerAdmin() {
+      return isCoreAdmin()
+        || isLimitedVolunteerAdmin();
+    }
+
+    function isTrainer() {
+      return isVolunteerAdmin()
+        || volunteerHasPermission('training:trainer');
+    }
+
+    function canApproveService() {
+      return isVolunteerAdmin()
+        || volunteerHasPermission('service:approve')
+        || volunteerHasPermission('training:trainer');
+    }
+
+    function canCreatePerformanceReview() {
+      return isVolunteerAdmin()
+        || volunteerHasPermission('performance:review')
+        || volunteerHasPermission('training:trainer');
+    }
+
+    // V2 operations center is intentionally available to verified trainers.
+    function canPostVolunteerAnnouncements() {
+      return isVolunteerAdmin()
+        || volunteerHasPermission('communications:post')
+        || volunteerHasPermission('training:trainer');
+    }
+
+    function canCreateRecognition() {
+      return isVolunteerAdmin()
+        || volunteerHasPermission('recognition:create')
+        || volunteerHasPermission('training:trainer');
+    }
+
+    function canViewVolunteerReports() {
+      return isVolunteerAdmin()
+        || volunteerHasPermission('reports:view')
+        || volunteerHasPermission('training:trainer');
+    }
+
+    function volunteerAccountEnabled() {
+      return volunteerProfileExists()
+        && !(
+          currentVolunteer().status in [
+            'Suspended',
+            'Inactive',
+            'Removed',
+            'Archived',
+            'suspended',
+            'inactive',
+            'removed',
+            'archived'
+          ]
+        );
+    }
+
+    function volunteerAgreementComplete() {
+      return volunteerProfileExists()
+        && currentVolunteer().agreementAccepted == true;
+    }
+
+    function volunteerTrainingComplete() {
+      return volunteerProfileExists()
+        && currentVolunteer().trainingCompleted == true;
+    }
+
+    function volunteerReady() {
+      return signedIn()
+        && volunteerAccountEnabled()
+        && volunteerAgreementComplete()
+        && volunteerTrainingComplete();
+    }
+
+    function volunteerCan(permissionName) {
+      return volunteerReady()
+        && (
+          volunteerHasPermission(permissionName)
+          || isLimitedVolunteerAdmin()
+          || isCoreAdmin()
+        );
+    }
+
+    function noPrivilegedVolunteerPermissions(permissionList) {
+      return permissionList is list
+        && !permissionList.hasAny([
+          'admin:limited',
+          'training:trainer',
+          'service:approve',
+          'performance:review',
+          'communications:post',
+          'recognition:create',
+          'reports:view'
+        ]);
+    }
+
+    function targetVolunteerIsPrivileged() {
+      return resource.data.permissions is list
+        && resource.data.permissions.hasAny([
+          'admin:limited',
+          'training:trainer'
+        ]);
+    }
+
+
+    // ========================================================================
+    // SECTION 4 — VOLUNTEER PROGRAM-OPEN SETTINGS HELPERS
+    // ========================================================================
+
+    function volunteerSettingsExist() {
+      return exists(
+        /databases/$(database)/documents/volunteer_settings/program
+      );
+    }
+
+    function volunteerApplicationsOpen() {
+      return !volunteerSettingsExist()
+        || !(
+          'applicationsOpen' in get(
+            /databases/$(database)/documents/volunteer_settings/program
+          ).data
+        )
+        || get(
+          /databases/$(database)/documents/volunteer_settings/program
+        ).data.applicationsOpen == true;
+    }
+
+    function volunteerChapterRequestsOpen() {
+      return !volunteerSettingsExist()
+        || !(
+          'chapterRequestsOpen' in get(
+            /databases/$(database)/documents/volunteer_settings/program
+          ).data
+        )
+        || get(
+          /databases/$(database)/documents/volunteer_settings/program
+        ).data.chapterRequestsOpen == true;
+    }
+
+    function volunteerSuggestionsOpen() {
+      return !volunteerSettingsExist()
+        || !(
+          'suggestionsOpen' in get(
+            /databases/$(database)/documents/volunteer_settings/program
+          ).data
+        )
+        || get(
+          /databases/$(database)/documents/volunteer_settings/program
+        ).data.suggestionsOpen == true;
+    }
+
+    function volunteerCareProjectsOpen() {
+      return !volunteerSettingsExist()
+        || !(
+          'careProjectsOpen' in get(
+            /databases/$(database)/documents/volunteer_settings/program
+          ).data
+        )
+        || get(
+          /databases/$(database)/documents/volunteer_settings/program
+        ).data.careProjectsOpen == true;
+    }
+
+
+    // ========================================================================
+    // SECTION 5 — PRAYER REQUESTS
+    // ========================================================================
+
+    function validPrayerRequestCreate() {
       return verifyFields(
           [
             'title',
@@ -94,68 +376,118 @@ service cloud.firestore {
         && request.resource.data.reportCount == 0
         && request.resource.data.answered == false
         && request.resource.data.status == 'approved'
-        && freshCreateTimestamps();
+        && validCreateTimestamps();
     }
 
-    function validPublicPrayerIncrement() {
+    function validPublicPrayerCounterIncrement() {
       return resource.data.status == 'approved'
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['prayerCount', 'updatedAt'])
+        && changedOnly(['prayerCount', 'updatedAt'])
         && request.resource.data.prayerCount is int
         && request.resource.data.prayerCount == resource.data.prayerCount + 1
-        && request.resource.data.prayerCount >= 1
-        && freshUpdateTimestamp();
+        && validUpdatedAt();
     }
 
-    function validPublicReportTransition() {
+    function validPublicPrayerReportTransition() {
       return resource.data.status == 'approved'
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['reportCount', 'status', 'updatedAt'])
+        && changedOnly(['reportCount', 'status', 'updatedAt'])
         && request.resource.data.reportCount is int
         && request.resource.data.reportCount == resource.data.reportCount + 1
         && request.resource.data.status == 'reported'
-        && freshUpdateTimestamp();
+        && validUpdatedAt();
     }
 
-    function validPublicAnsweredUpdate() {
+    function validPublicAnsweredPrayerUpdate() {
       return resource.data.status == 'approved'
         && resource.data.answered == false
+        && changedOnly([
+          'answered',
+          'answeredAt',
+          'answeredTestimony',
+          'updatedAt'
+        ])
         && request.resource.data.answered == true
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['answered', 'answeredAt', 'answeredTestimony', 'updatedAt'])
         && request.resource.data.answeredAt == request.time
-        && request.resource.data.updatedAt == request.time
-        && (
-          !('answeredTestimony' in request.resource.data)
-          || (
-            request.resource.data.answeredTestimony is string
-            && request.resource.data.answeredTestimony.size() <= 500
-          )
-        );
+        && (!('answeredTestimony' in request.resource.data)
+          || textAtMost(request.resource.data.answeredTestimony, 500))
+        && validUpdatedAt();
+    }
+
+    function validCoreAdminPrayerUpdate() {
+      return isCoreAdmin()
+        && changedOnly([
+          'title',
+          'category',
+          'message',
+          'email',
+          'urgent',
+          'prayerCount',
+          'reportCount',
+          'answered',
+          'answeredAt',
+          'answeredTestimony',
+          'status',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.title, 1, 90)
+        && textBetween(request.resource.data.category, 1, 80)
+        && textBetween(request.resource.data.message, 1, 5000)
+        && textAtMost(request.resource.data.email, 254)
+        && request.resource.data.urgent is bool
+        && nonNegativeInt(request.resource.data.prayerCount)
+        && nonNegativeInt(request.resource.data.reportCount)
+        && request.resource.data.answered is bool
+        && statusIn(
+          request.resource.data.status,
+          ['approved', 'reported', 'removed', 'pending', 'answered']
+        )
+        && (!('answeredTestimony' in request.resource.data)
+          || textAtMost(request.resource.data.answeredTestimony, 2000))
+        && validUpdatedAt();
     }
 
     match /prayer_requests/{requestId} {
-      // Public wall queries must constrain status == "approved".
-      // Admins can read every moderation state.
-      allow get, list: if isAdmin() || resource.data.status == 'approved';
+      allow get: if isCoreAdmin()
+        || resource.data.status == 'approved';
 
-      allow create: if validPrayerCreate();
+      // Public wall queries must be constrained to status == "approved".
+      allow list: if isCoreAdmin()
+        || resource.data.status == 'approved';
 
-      allow update: if isAdmin()
-        || validPublicPrayerIncrement()
-        || validPublicReportTransition()
-        || validPublicAnsweredUpdate();
+      allow create: if validPrayerRequestCreate();
 
-      allow delete: if isAdmin();
+      allow update: if validCoreAdminPrayerUpdate()
+        || validPublicPrayerCounterIncrement()
+        || validPublicPrayerReportTransition()
+        || validPublicAnsweredPrayerUpdate();
+
+      allow delete: if isCoreAdmin();
     }
 
-    // ============================================================
-    // PRAYER REPORTING / MODERATION
-    // ============================================================
 
-    function validReportCreate() {
+    // ========================================================================
+    // SECTION 6 — PRAYER REPORTS
+    // ========================================================================
+
+    function reporterIsNotBanned(emailKeyValue) {
+      return !exists(
+          /databases/$(database)/documents/report_bans/$(emailKeyValue)
+        )
+        || get(
+          /databases/$(database)/documents/report_bans/$(emailKeyValue)
+        ).data.active == false;
+    }
+
+    function validPrayerReportCreate() {
       return verifyFields(
-          ['requestId', 'email', 'emailKey', 'category', 'reason', 'createdAt', 'status'],
+          [
+            'requestId',
+            'email',
+            'emailKey',
+            'category',
+            'reason',
+            'createdAt',
+            'status'
+          ],
           []
         )
         && textBetween(request.resource.data.requestId, 1, 200)
@@ -164,293 +496,1794 @@ service cloud.firestore {
         && textBetween(request.resource.data.category, 1, 80)
         && textBetween(request.resource.data.reason, 10, 700)
         && request.resource.data.status == 'open'
-        && request.resource.data.createdAt == request.time
-        && exists(/databases/$(database)/documents/prayer_requests/$(request.resource.data.requestId))
-        && get(/databases/$(database)/documents/prayer_requests/$(request.resource.data.requestId)).data.status == 'approved'
-        && reporterNotBanned(request.resource.data.emailKey);
+        && validCreatedAt()
+        && exists(
+          /databases/$(database)/documents/prayer_requests/$(request.resource.data.requestId)
+        )
+        && get(
+          /databases/$(database)/documents/prayer_requests/$(request.resource.data.requestId)
+        ).data.status == 'approved'
+        && reporterIsNotBanned(request.resource.data.emailKey);
+    }
+
+    function validCoreAdminReportUpdate() {
+      return isCoreAdmin()
+        && changedOnly([
+          'status',
+          'resolvedAt',
+          'resolvedBy',
+          'adminNote',
+          'updatedAt'
+        ])
+        && request.resource.data.status in [
+          'open',
+          'resolved',
+          'dismissed'
+        ]
+        && (!('adminNote' in request.resource.data)
+          || textAtMost(request.resource.data.adminNote, 5000));
     }
 
     match /reports/{reportId} {
-      allow create: if validReportCreate();
-      allow read, update, delete: if isAdmin();
+      allow create: if validPrayerReportCreate();
+      allow get, list: if isCoreAdmin();
+      allow update: if validCoreAdminReportUpdate();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 7 — REPORT BANS
+    // ========================================================================
+
+    function validReportBanWrite() {
+      return request.resource.data.keys().hasAll([
+          'email',
+          'active'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'email',
+          'active',
+          'reason',
+          'createdAt',
+          'createdBy',
+          'updatedAt',
+          'updatedBy'
+        ])
+        && textBetween(request.resource.data.email, 3, 254)
+        && request.resource.data.active is bool
+        && (!('reason' in request.resource.data)
+          || textAtMost(request.resource.data.reason, 5000));
     }
 
     match /report_bans/{banId} {
-      // Legacy prayer-wall code performs an exact-ID lookup before submitting
-      // a report. Exact gets remain public for compatibility; collection
-      // listing and all writes remain admin-only. The report-create rule also
-      // enforces the ban server-side so this lookup is not the security barrier.
+      // The current report form performs an exact-ID lookup before submission.
+      // Collection listing remains private, and report creation separately
+      // checks the ban record server-side in these rules.
       allow get: if true;
-      allow list: if isAdmin();
-      allow create, update, delete: if isAdmin();
+      allow list: if isCoreAdmin();
+      allow create, update: if isCoreAdmin()
+        && validReportBanWrite();
+      allow delete: if isCoreAdmin();
     }
 
-    // ============================================================
-    // VOLUNTEER APPLICATIONS / INVITES / PROFILES
-    // ============================================================
+
+    // ========================================================================
+    // SECTION 8 — MAIN SITE SETTINGS / PUBLIC STATUS
+    // ========================================================================
+
+    function validSiteSettingsWrite() {
+      return request.resource.data.keys().hasOnly([
+          'dailyVerse',
+          'dailyVerseReference',
+          'homepageAnnouncement',
+          'submissionsOpen',
+          'statusMessage',
+          'statusCards',
+          'lastSettingsUpdate',
+          'updatedAt'
+        ])
+        && (!('dailyVerse' in request.resource.data)
+          || textAtMost(request.resource.data.dailyVerse, 1200))
+        && (!('dailyVerseReference' in request.resource.data)
+          || textAtMost(request.resource.data.dailyVerseReference, 120))
+        && (!('homepageAnnouncement' in request.resource.data)
+          || textAtMost(request.resource.data.homepageAnnouncement, 3000))
+        && (!('submissionsOpen' in request.resource.data)
+          || request.resource.data.submissionsOpen is bool)
+        && (!('statusMessage' in request.resource.data)
+          || textAtMost(request.resource.data.statusMessage, 3000))
+        && (!('statusCards' in request.resource.data)
+          || request.resource.data.statusCards is map)
+        && (!('lastSettingsUpdate' in request.resource.data)
+          || textAtMost(request.resource.data.lastSettingsUpdate, 100))
+        && (!('updatedAt' in request.resource.data)
+          || validUpdatedAt());
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create, update: if isCoreAdmin()
+        && validSiteSettingsWrite();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 9 — CORE ADMIN AUTHORIZATION REGISTRY
+    // ========================================================================
+
+    function validAdminRegistryWrite(adminId) {
+      return request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'name',
+          'active',
+          'role',
+          'createdAt',
+          'createdBy',
+          'updatedAt',
+          'updatedBy'
+        ])
+        && (!('uid' in request.resource.data)
+          || request.resource.data.uid == adminId)
+        && (!('email' in request.resource.data)
+          || textAtMost(request.resource.data.email, 254))
+        && (!('name' in request.resource.data)
+          || textAtMost(request.resource.data.name, 160))
+        && (!('active' in request.resource.data)
+          || request.resource.data.active is bool)
+        && (!('role' in request.resource.data)
+          || textAtMost(request.resource.data.role, 120));
+    }
+
+    match /admins/{adminId} {
+      allow get: if isOwner()
+        || isSelf(adminId);
+      allow list: if isOwner();
+      allow create, update: if isOwner()
+        && validAdminRegistryWrite(adminId);
+      allow delete: if isOwner();
+    }
+
+
+    // ========================================================================
+    // SECTION 10 — VOLUNTEER APPLICATIONS
+    // ========================================================================
+
+    function validVolunteerApplicationCreate() {
+      return volunteerApplicationsOpen()
+        && verifyFields(
+          [
+            'name',
+            'email',
+            'emailKey',
+            'age',
+            'location',
+            'interest',
+            'why',
+            'experience',
+            'availability',
+            'status',
+            'createdAt',
+            'updatedAt'
+          ],
+          []
+        )
+        && textBetween(request.resource.data.name, 2, 160)
+        && textBetween(request.resource.data.email, 3, 254)
+        && textBetween(request.resource.data.emailKey, 3, 300)
+        && request.resource.data.age is int
+        && request.resource.data.age >= 0
+        && request.resource.data.age <= 120
+        && textBetween(request.resource.data.location, 1, 300)
+        && textBetween(request.resource.data.interest, 1, 200)
+        && textBetween(request.resource.data.why, 5, 5000)
+        && textAtMost(request.resource.data.experience, 5000)
+        && textAtMost(request.resource.data.availability, 3000)
+        && request.resource.data.status == 'submitted'
+        && validCreateTimestamps();
+    }
+
+    function validVolunteerApplicationAdminUpdate() {
+      return isVolunteerAdmin()
+        && changedOnly([
+          'status',
+          'acceptedAt',
+          'acceptedBy',
+          'rejectedAt',
+          'rejectedBy',
+          'reviewedAt',
+          'reviewedBy',
+          'temporaryCode',
+          'assignedRole',
+          'assignedTeam',
+          'assignedStatus',
+          'assignedPermissions',
+          'assignedChapterId',
+          'adminNote',
+          'updatedAt'
+        ])
+        && request.resource.data.status in [
+          'submitted',
+          'under review',
+          'accepted',
+          'rejected',
+          'activated',
+          'archived'
+        ]
+        && (!('temporaryCode' in request.resource.data)
+          || textAtMost(request.resource.data.temporaryCode, 120))
+        && (!('assignedRole' in request.resource.data)
+          || textAtMost(request.resource.data.assignedRole, 160))
+        && (!('assignedTeam' in request.resource.data)
+          || textAtMost(request.resource.data.assignedTeam, 200))
+        && (!('assignedStatus' in request.resource.data)
+          || textAtMost(request.resource.data.assignedStatus, 80))
+        && (!('assignedChapterId' in request.resource.data)
+          || textAtMost(request.resource.data.assignedChapterId, 200))
+        && (!('assignedPermissions' in request.resource.data)
+          || (
+            request.resource.data.assignedPermissions is list
+            && (
+              isCoreAdmin()
+              || noPrivilegedVolunteerPermissions(
+                request.resource.data.assignedPermissions
+              )
+            )
+          ))
+        && validUpdatedAt();
+    }
+
+    function validLegacyApplicationActivation() {
+      return signedIn()
+        && resource.data.status == 'accepted'
+        && resource.data.email == currentEmail()
+        && changedOnly([
+          'activatedUid',
+          'activatedAt',
+          'status',
+          'updatedAt'
+        ])
+        && request.resource.data.activatedUid == currentUid()
+        && request.resource.data.activatedAt == request.time
+        && request.resource.data.status == 'activated'
+        && validUpdatedAt();
+    }
 
     match /volunteer_applications/{applicationId} {
-      allow create: if
-        request.resource.data.name is string
-        && request.resource.data.name.size() >= 2
-        && request.resource.data.name.size() <= 160
-        && request.resource.data.email is string
-        && request.resource.data.email.size() >= 3
-        && request.resource.data.email.size() <= 254
-        && request.resource.data.emailKey is string
-        && request.resource.data.emailKey.size() >= 3
-        && request.resource.data.emailKey.size() <= 300
-        && request.resource.data.why is string
-        && request.resource.data.why.size() >= 5
-        && request.resource.data.why.size() <= 5000
-        && request.resource.data.status == 'submitted'
-        && !request.resource.data.keys().hasAny([
-          'approved',
-          'approvedAt',
-          'approvedBy',
-          'declinedAt',
-          'declinedBy',
-          'admin',
-          'isAdmin',
-          'permissions'
-        ]);
+      allow create: if validVolunteerApplicationCreate();
 
-      allow read, update, delete: if isAdmin();
+      allow get: if isVolunteerAdmin()
+        || (
+          signedIn()
+          && resource.data.email == currentEmail()
+          && resource.data.status in ['accepted', 'activated']
+        );
+
+      // Legacy activation may query an accepted application after the user is
+      // authenticated. The client query must constrain BOTH email and status.
+      allow list: if isVolunteerAdmin()
+        || (
+          signedIn()
+          && resource.data.email == currentEmail()
+          && resource.data.status == 'accepted'
+        );
+
+      allow update: if validVolunteerApplicationAdminUpdate()
+        || validLegacyApplicationActivation();
+
+      allow delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 11 — VOLUNTEER INVITES / ONE-TIME ACTIVATION
+    // ========================================================================
+
+    function validVolunteerInviteShape(inviteId) {
+      return request.resource.data.keys().hasAll([
+          'email',
+          'emailKey',
+          'code',
+          'status',
+          'used',
+          'name',
+          'role',
+          'team',
+          'volunteerStatus',
+          'permissions',
+          'chapterId'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'email',
+          'emailKey',
+          'code',
+          'customCode',
+          'manualCreated',
+          'manualCodeOnly',
+          'status',
+          'used',
+          'usedAt',
+          'uid',
+          'name',
+          'role',
+          'team',
+          'volunteerStatus',
+          'permissions',
+          'chapterId',
+          'volunteerId',
+          'applicationId',
+          'expiresAt',
+          'createdBy',
+          'createdAt',
+          'updatedAt',
+          'overrideBy',
+          'overrideAt'
+        ])
+        && textBetween(request.resource.data.email, 3, 254)
+        && request.resource.data.emailKey == inviteId
+        && textBetween(request.resource.data.emailKey, 3, 300)
+        && textBetween(request.resource.data.code, 4, 120)
+        && textAtMost(request.resource.data.name, 160)
+        && textAtMost(request.resource.data.role, 160)
+        && textAtMost(request.resource.data.team, 200)
+        && textAtMost(request.resource.data.volunteerStatus, 80)
+        && request.resource.data.permissions is list
+        && textAtMost(request.resource.data.chapterId, 200)
+        && request.resource.data.used is bool
+        && request.resource.data.status in [
+          'active',
+          'used',
+          'revoked',
+          'expired'
+        ]
+        && (
+          isCoreAdmin()
+          || noPrivilegedVolunteerPermissions(
+            request.resource.data.permissions
+          )
+        );
+    }
+
+    function validInviteActivation(inviteId) {
+      return signedIn()
+        && resource.data.email == currentEmail()
+        && resource.data.emailKey == inviteId
+        && resource.data.used == false
+        && resource.data.status == 'active'
+        && changedOnly(['used', 'usedAt', 'uid', 'status'])
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.emailKey == resource.data.emailKey
+        && request.resource.data.used == true
+        && request.resource.data.usedAt == request.time
+        && request.resource.data.uid == currentUid()
+        && request.resource.data.status == 'used';
     }
 
     match /volunteer_invites/{inviteId} {
-      // A visitor may fetch an invite only when they already know its exact ID.
+      // The current pre-auth activation page must fetch the exact invite in
+      // order to validate its one-time code. Listing remains protected.
       allow get: if true;
-      allow list: if isAdmin();
-      allow create, update, delete: if isAdmin();
+      allow list: if isVolunteerAdmin();
+
+      allow create: if isVolunteerAdmin()
+        && validVolunteerInviteShape(inviteId)
+        && request.resource.data.used == false
+        && request.resource.data.status == 'active'
+        && validCreatedAt();
+
+      allow update: if (
+          isVolunteerAdmin()
+          && validVolunteerInviteShape(inviteId)
+        )
+        || validInviteActivation(inviteId);
+
+      allow delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 12 — VOLUNTEER PROFILE / ACCOUNT LIFECYCLE
+    // ========================================================================
+
+    function activationInviteExists(emailKeyValue) {
+      return exists(
+        /databases/$(database)/documents/volunteer_invites/$(emailKeyValue)
+      );
+    }
+
+    function activationInviteData(emailKeyValue) {
+      return get(
+        /databases/$(database)/documents/volunteer_invites/$(emailKeyValue)
+      ).data;
+    }
+
+    function validVolunteerProfileCreate(volunteerId) {
+      let emailKeyValue = request.resource.data.emailKey;
+      let hasInvite = activationInviteExists(emailKeyValue);
+      let inviteData = hasInvite
+        ? activationInviteData(emailKeyValue)
+        : {};
+
+      return isSelf(volunteerId)
+        && verifyFields(
+          [
+            'uid',
+            'email',
+            'emailKey',
+            'volunteerId',
+            'name',
+            'role',
+            'team',
+            'status',
+            'permissions',
+            'chapterId',
+            'agreementAccepted',
+            'trainingCompleted',
+            'activationSource',
+            'createdAt',
+            'updatedAt'
+          ],
+          []
+        )
+        && request.resource.data.uid == currentUid()
+        && request.resource.data.email == currentEmail()
+        && textBetween(request.resource.data.emailKey, 3, 300)
+        && textBetween(request.resource.data.volunteerId, 3, 100)
+        && textBetween(request.resource.data.name, 1, 160)
+        && textBetween(request.resource.data.role, 1, 160)
+        && textBetween(request.resource.data.team, 1, 200)
+        && textBetween(request.resource.data.status, 1, 80)
+        && request.resource.data.permissions is list
+        && textAtMost(request.resource.data.chapterId, 200)
+        && request.resource.data.agreementAccepted == false
+        && request.resource.data.trainingCompleted == false
+        && request.resource.data.activationSource in [
+          'invite',
+          'old_application'
+        ]
+        && validCreateTimestamps()
+        && (
+          (
+            request.resource.data.activationSource == 'invite'
+            && hasInvite
+            && inviteData.email == currentEmail()
+            && inviteData.status == 'active'
+            && inviteData.used == false
+            && request.resource.data.name == inviteData.name
+            && request.resource.data.role == inviteData.role
+            && request.resource.data.team == inviteData.team
+            && request.resource.data.status == inviteData.volunteerStatus
+            && request.resource.data.permissions == inviteData.permissions
+            && request.resource.data.chapterId == inviteData.chapterId
+          )
+          || (
+            request.resource.data.activationSource == 'old_application'
+            && noPrivilegedVolunteerPermissions(
+              request.resource.data.permissions
+            )
+          )
+        );
+    }
+
+    function validVolunteerAgreementUpdate(volunteerId) {
+      return isSelf(volunteerId)
+        && resource.data.agreementAccepted == false
+        && changedOnly([
+          'agreementAccepted',
+          'agreementAcceptedAt',
+          'updatedAt'
+        ])
+        && request.resource.data.agreementAccepted == true
+        && request.resource.data.agreementAcceptedAt == request.time
+        && validUpdatedAt();
+    }
+
+    function validVolunteerTrainingSubmissionState(volunteerId) {
+      return isSelf(volunteerId)
+        && changedOnly([
+          'trainingReviewStatus',
+          'trainingSubmittedAt',
+          'updatedAt'
+        ])
+        && request.resource.data.trainingReviewStatus in [
+          'Needs Review',
+          'Submitted',
+          'submitted'
+        ]
+        && request.resource.data.trainingSubmittedAt == request.time
+        && validUpdatedAt();
+    }
+
+    function validVolunteerProfileDetailsUpdate(volunteerId) {
+      return isSelf(volunteerId)
+        && changedOnly([
+          'preferredName',
+          'church',
+          'emergencyContact',
+          'volunteerProfileNotes',
+          'profileUpdatedAt',
+          'updatedAt'
+        ])
+        && textAtMost(request.resource.data.preferredName, 160)
+        && textAtMost(request.resource.data.church, 300)
+        && textAtMost(request.resource.data.emergencyContact, 500)
+        && textAtMost(request.resource.data.volunteerProfileNotes, 3000)
+        && request.resource.data.profileUpdatedAt == request.time
+        && validUpdatedAt();
+    }
+
+    function validVolunteerPasswordResetState(volunteerId) {
+      return isSelf(volunteerId)
+        && changedOnly([
+          'requirePasswordReset',
+          'passwordResetCompletedAt',
+          'updatedAt'
+        ])
+        && request.resource.data.requirePasswordReset == false
+        && request.resource.data.passwordResetCompletedAt == request.time
+        && validUpdatedAt();
+    }
+
+    function validTrainerVolunteerUpdate() {
+      return isTrainer()
+        && (
+          isCoreAdmin()
+          || !targetVolunteerIsPrivileged()
+        )
+        && changedOnly([
+          'trainingCompleted',
+          'trainingCompletedAt',
+          'trainingReviewStatus',
+          'trainerUid',
+          'trainerEmail',
+          'status',
+          'updatedAt'
+        ])
+        && request.resource.data.trainingCompleted is bool
+        && request.resource.data.status in [
+          'Active',
+          'Training',
+          'Orientation',
+          'Probationary',
+          'Limited',
+          'Suspended',
+          'Inactive',
+          'Removed',
+          'Archived'
+        ]
+        && (!('trainingReviewStatus' in request.resource.data)
+          || textAtMost(request.resource.data.trainingReviewStatus, 80))
+        && (!('trainerUid' in request.resource.data)
+          || textAtMost(request.resource.data.trainerUid, 160))
+        && (!('trainerEmail' in request.resource.data)
+          || textAtMost(request.resource.data.trainerEmail, 254))
+        && validUpdatedAt();
+    }
+
+    function validVolunteerAdminProfileUpdate() {
+      return isVolunteerAdmin()
+        && changedOnly([
+          'name',
+          'team',
+          'role',
+          'status',
+          'permissions',
+          'chapterId',
+          'agreementAccepted',
+          'agreementAcceptedAt',
+          'trainingCompleted',
+          'trainingCompletedAt',
+          'trainingReviewStatus',
+          'trainingSubmittedAt',
+          'trainerUid',
+          'trainerEmail',
+          'preferredName',
+          'church',
+          'emergencyContact',
+          'volunteerProfileNotes',
+          'profileUpdatedAt',
+          'requirePasswordReset',
+          'passwordResetCompletedAt',
+          'updatedAt',
+          'updatedBy'
+        ])
+        && textBetween(request.resource.data.name, 1, 160)
+        && textBetween(request.resource.data.team, 1, 200)
+        && textBetween(request.resource.data.role, 1, 160)
+        && request.resource.data.status in [
+          'Active',
+          'Training',
+          'Orientation',
+          'Probationary',
+          'Limited',
+          'Suspended',
+          'Inactive',
+          'Removed',
+          'Archived'
+        ]
+        && request.resource.data.permissions is list
+        && (
+          isCoreAdmin()
+          || (
+            !request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasAny(['permissions'])
+            && !targetVolunteerIsPrivileged()
+          )
+        )
+        && textAtMost(request.resource.data.chapterId, 200)
+        && validUpdatedAt();
     }
 
     match /volunteers/{volunteerId} {
-      allow get: if isAdmin() || isSelf(volunteerId);
-      allow list: if isAdmin();
-
-      allow create: if isSelf(volunteerId)
-        && (
-          !('uid' in request.resource.data)
-          || request.resource.data.uid == request.auth.uid
-        )
-        && !request.resource.data.keys().hasAny([
-          'admin',
-          'isAdmin',
-          'permissions'
-        ]);
-
-      allow update: if isAdmin()
-        || (
-          isSelf(volunteerId)
-          && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly([
-              'agreementAccepted',
-              'agreementAcceptedAt',
-              'trainingCompleted',
-              'trainingCompletedAt',
-              'updatedAt'
-            ])
-        );
-
-      allow delete: if isAdmin();
+      allow get: if isSelf(volunteerId)
+        || isVolunteerAdmin()
+        || isTrainer();
+      allow list: if isVolunteerAdmin()
+        || isTrainer();
+      allow create: if validVolunteerProfileCreate(volunteerId);
+      allow update: if validVolunteerAdminProfileUpdate()
+        || validTrainerVolunteerUpdate()
+        || validVolunteerAgreementUpdate(volunteerId)
+        || validVolunteerTrainingSubmissionState(volunteerId)
+        || validVolunteerProfileDetailsUpdate(volunteerId)
+        || validVolunteerPasswordResetState(volunteerId);
+      allow delete: if isVolunteerAdmin();
     }
 
-    // ============================================================
-    // VOLUNTEER CHAPTERS
-    // ============================================================
 
-    match /volunteer_chapter_requests/{chapterId} {
-      allow get, list: if isAdmin()
-        || (
-          signedIn()
-          && resource.data.uid == request.auth.uid
-        );
+    // ========================================================================
+    // SECTION 13 — VOLUNTEER CHAPTER REQUESTS
+    // ========================================================================
 
-      allow create: if signedIn()
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.email is string
-        && request.resource.data.email.size() >= 3
-        && request.resource.data.email.size() <= 254
-        && request.resource.data.emailKey is string
-        && request.resource.data.chapterName is string
-        && request.resource.data.chapterName.size() >= 2
-        && request.resource.data.chapterName.size() <= 200
-        && request.resource.data.purpose is string
-        && request.resource.data.purpose.size() >= 5
-        && request.resource.data.purpose.size() <= 5000
-        && request.resource.data.status == 'submitted';
+    function validChapterRequestCreate() {
+      return volunteerChapterRequestsOpen()
+        && volunteerCan('chapter:request')
+        && verifyFields(
+          [
+            'uid',
+            'email',
+            'emailKey',
+            'chapterName',
+            'chapterType',
+            'location',
+            'purpose',
+            'status',
+            'leaderName',
+            'createdAt',
+            'updatedAt'
+          ],
+          []
+        )
+        && request.resource.data.uid == currentUid()
+        && request.resource.data.email == currentVolunteer().email
+        && textBetween(request.resource.data.emailKey, 3, 300)
+        && textBetween(request.resource.data.chapterName, 2, 200)
+        && textBetween(request.resource.data.chapterType, 1, 120)
+        && textBetween(request.resource.data.location, 1, 300)
+        && textBetween(request.resource.data.purpose, 5, 5000)
+        && request.resource.data.status == 'submitted'
+        && textAtMost(request.resource.data.leaderName, 160)
+        && validCreateTimestamps();
+    }
 
-      allow update, delete: if isAdmin();
+    function validChapterRequestAdminUpdate() {
+      return isVolunteerAdmin()
+        && changedOnly([
+          'status',
+          'chapterId',
+          'approvedBy',
+          'approvedAt',
+          'reviewedBy',
+          'reviewedAt',
+          'adminNote',
+          'updatedAt'
+        ])
+        && request.resource.data.status in [
+          'submitted',
+          'under review',
+          'approved',
+          'rejected',
+          'withdrawn',
+          'archived'
+        ]
+        && (!('chapterId' in request.resource.data)
+          || textAtMost(request.resource.data.chapterId, 200))
+        && validUpdatedAt();
+    }
+
+    match /volunteer_chapter_requests/{chapterRequestId} {
+      allow create: if validChapterRequestCreate();
+      allow get: if isVolunteerAdmin()
+        || (signedIn() && resource.data.uid == currentUid())
+        || resource.data.status == 'approved';
+      allow list: if isVolunteerAdmin()
+        || (signedIn() && resource.data.uid == currentUid())
+        || resource.data.status == 'approved';
+      allow update: if validChapterRequestAdminUpdate();
+      allow delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 14 — ACTIVE VOLUNTEER CHAPTERS
+    // ========================================================================
+
+    function validVolunteerChapterWrite() {
+      return request.resource.data.keys().hasAll([
+          'chapterName',
+          'status',
+          'chapterId'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'emailKey',
+          'leaderName',
+          'chapterName',
+          'chapterType',
+          'location',
+          'purpose',
+          'status',
+          'chapterId',
+          'sourceRequestId',
+          'leaderEmail',
+          'leaderUid',
+          'chapterGoal',
+          'chapterHealth',
+          'chapterHealthUpdatedAt',
+          'approvedBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.chapterName, 1, 200)
+        && (!('chapterType' in request.resource.data)
+          || textAtMost(request.resource.data.chapterType, 120))
+        && (!('location' in request.resource.data)
+          || textAtMost(request.resource.data.location, 300))
+        && (!('purpose' in request.resource.data)
+          || textAtMost(request.resource.data.purpose, 5000))
+        && textAtMost(request.resource.data.chapterId, 200)
+        && request.resource.data.status in [
+          'active',
+          'paused',
+          'inactive',
+          'suspended',
+          'closed'
+        ]
+        && (!('chapterGoal' in request.resource.data)
+          || textAtMost(request.resource.data.chapterGoal, 5000))
+        && (!('chapterHealth' in request.resource.data)
+          || request.resource.data.chapterHealth in [
+            'Healthy',
+            'Needs Attention',
+            'Inactive Risk',
+            'Paused'
+          ]);
+    }
+
+    function validTrainerChapterHealthUpdate() {
+      return isTrainer()
+        && changedOnly([
+          'chapterGoal',
+          'chapterHealth',
+          'chapterHealthUpdatedAt',
+          'updatedAt'
+        ])
+        && textAtMost(request.resource.data.chapterGoal, 5000)
+        && request.resource.data.chapterHealth in [
+          'Healthy',
+          'Needs Attention',
+          'Inactive Risk',
+          'Paused'
+        ]
+        && request.resource.data.chapterHealthUpdatedAt == request.time
+        && validUpdatedAt();
     }
 
     match /volunteer_chapters/{chapterId} {
-      // Approved chapter records are intentionally public for verification.
       allow read: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /chapter_members/{memberId} {
-      allow create: if signedIn()
-        && (
-          !('uid' in request.resource.data)
-          || request.resource.data.uid == request.auth.uid
+      allow create: if isVolunteerAdmin()
+        && validVolunteerChapterWrite();
+      allow update: if (
+          isVolunteerAdmin()
+          && validVolunteerChapterWrite()
         )
-        && !request.resource.data.keys().hasAny([
-          'admin',
-          'isAdmin',
-          'permissions'
-        ]);
-
-      allow read, update, delete: if isAdmin();
+        || validTrainerChapterHealthUpdate();
+      allow delete: if isVolunteerAdmin();
     }
 
-    // ============================================================
-    // VOLUNTEER TRAINING / ACTIVITY / SERVICE
-    // ============================================================
+
+    // ========================================================================
+    // SECTION 15 — CHAPTER MEMBERSHIP
+    // ========================================================================
+
+    function validSelfChapterMembershipCreate() {
+      return signedIn()
+        && volunteerProfileExists()
+        && verifyFields(
+          [
+            'chapterId',
+            'uid',
+            'email',
+            'name',
+            'role',
+            'team',
+            'status',
+            'source',
+            'updatedAt'
+          ],
+          ['joinedAt']
+        )
+        && request.resource.data.uid == currentUid()
+        && request.resource.data.email == currentVolunteer().email
+        && request.resource.data.chapterId == currentVolunteer().chapterId
+        && request.resource.data.role == currentVolunteer().role
+        && request.resource.data.team == currentVolunteer().team
+        && request.resource.data.status == 'active'
+        && request.resource.data.source in [
+          'invite',
+          'old_application',
+          'activation'
+        ]
+        && (!('joinedAt' in request.resource.data)
+          || request.resource.data.joinedAt == request.time)
+        && validUpdatedAt();
+    }
+
+    function chapterLeaderMayRead(chapterIdValue) {
+      return signedIn()
+        && volunteerHasPermission('chapter:lead')
+        && volunteerProfileExists()
+        && currentVolunteer().chapterId == chapterIdValue;
+    }
+
+    match /chapter_members/{chapterMemberId} {
+      allow get, list: if isVolunteerAdmin()
+        || isTrainer()
+        || (signedIn() && resource.data.uid == currentUid())
+        || chapterLeaderMayRead(resource.data.chapterId);
+      allow create: if isVolunteerAdmin()
+        || validSelfChapterMembershipCreate();
+      allow update, delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 16 — CHAPTER REPORTS
+    // ========================================================================
+
+    function validChapterReportCreate() {
+      return signedIn()
+        && volunteerProfileExists()
+        && volunteerHasPermission('chapter:lead')
+        && verifyFields(
+          [
+            'uid',
+            'chapterId',
+            'summary',
+            'status',
+            'createdAt',
+            'updatedAt'
+          ],
+          [
+            'title',
+            'period',
+            'attendance',
+            'serviceMinutes',
+            'prayerRequests',
+            'notes'
+          ]
+        )
+        && request.resource.data.uid == currentUid()
+        && request.resource.data.chapterId == currentVolunteer().chapterId
+        && textBetween(request.resource.data.summary, 1, 8000)
+        && request.resource.data.status == 'submitted'
+        && (!('title' in request.resource.data)
+          || textAtMost(request.resource.data.title, 240))
+        && (!('attendance' in request.resource.data)
+          || nonNegativeInt(request.resource.data.attendance))
+        && (!('serviceMinutes' in request.resource.data)
+          || nonNegativeInt(request.resource.data.serviceMinutes))
+        && validCreateTimestamps();
+    }
+
+    match /chapter_reports/{chapterReportId} {
+      allow create: if validChapterReportCreate();
+      allow get, list: if isVolunteerAdmin()
+        || isTrainer()
+        || (signedIn() && resource.data.uid == currentUid());
+      allow update, delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 17 — TRAINING PLANS
+    // ========================================================================
+
+    function validTrainingPlanWrite(planId) {
+      return request.resource.data.keys().hasAll([
+          'uid',
+          'email',
+          'name',
+          'assignedTrainerUid',
+          'assignedTrainerEmail',
+          'assignedTrainerName',
+          'status',
+          'sections',
+          'notes',
+          'requiredCount',
+          'completedCount',
+          'allRequiredComplete',
+          'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'name',
+          'assignedTrainerUid',
+          'assignedTrainerEmail',
+          'assignedTrainerName',
+          'status',
+          'sections',
+          'notes',
+          'requiredCount',
+          'completedCount',
+          'allRequiredComplete',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.uid == planId
+        && textAtMost(request.resource.data.email, 254)
+        && textAtMost(request.resource.data.name, 160)
+        && textAtMost(request.resource.data.assignedTrainerUid, 160)
+        && textAtMost(request.resource.data.assignedTrainerEmail, 254)
+        && textAtMost(request.resource.data.assignedTrainerName, 160)
+        && request.resource.data.status in [
+          'Assigned',
+          'In Progress',
+          'Needs Review',
+          'Completed',
+          'Paused',
+          'Returned'
+        ]
+        && request.resource.data.sections is list
+        && textAtMost(request.resource.data.notes, 8000)
+        && nonNegativeInt(request.resource.data.requiredCount)
+        && nonNegativeInt(request.resource.data.completedCount)
+        && request.resource.data.completedCount
+          <= request.resource.data.requiredCount
+        && request.resource.data.allRequiredComplete is bool
+        && validUpdatedAt();
+    }
+
+    function trainerMayCreatePlan(planId) {
+      return isTrainer()
+        && validTrainingPlanWrite(planId)
+        && (
+          isVolunteerAdmin()
+          || request.resource.data.assignedTrainerUid == currentUid()
+        );
+    }
+
+    function trainerMayUpdatePlan(planId) {
+      return isTrainer()
+        && validTrainingPlanWrite(planId)
+        && (
+          isVolunteerAdmin()
+          || resource.data.assignedTrainerUid == currentUid()
+        );
+    }
 
     match /volunteer_training_plans/{planId} {
-      allow read: if isAdmin() || isSelf(planId);
-      allow create, update, delete: if isAdmin();
+      allow get: if isSelf(planId)
+        || isTrainer();
+      allow list: if isTrainer();
+      allow create: if trainerMayCreatePlan(planId);
+      allow update: if trainerMayUpdatePlan(planId);
+      allow delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 18 — TRAINING COMPLETIONS / REVIEW QUEUE
+    // ========================================================================
+
+    function validTrainingCompletionCreate() {
+      return signedIn()
+        && volunteerProfileExists()
+        && volunteerAccountEnabled()
+        && volunteerAgreementComplete()
+        && (
+          volunteerHasPermission('training:complete')
+          || isVolunteerAdmin()
+        )
+        && verifyFields(
+          [
+            'uid',
+            'email',
+            'name',
+            'reflection',
+            'status',
+            'createdAt'
+          ],
+          ['reviewStage', 'updatedAt']
+        )
+        && request.resource.data.uid == currentUid()
+        && request.resource.data.email == currentVolunteer().email
+        && request.resource.data.name == currentVolunteer().name
+        && textBetween(request.resource.data.reflection, 1, 8000)
+        && request.resource.data.status in [
+          'submitted',
+          'Submitted',
+          'Needs Review'
+        ]
+        && (!('reviewStage' in request.resource.data)
+          || textAtMost(request.resource.data.reviewStage, 120))
+        && validCreatedAt()
+        && (!('updatedAt' in request.resource.data)
+          || validUpdatedAt());
+    }
+
+    function validTrainingReviewUpdate() {
+      return isTrainer()
+        && changedOnly([
+          'status',
+          'trainerNote',
+          'reviewedBy',
+          'reviewedAt',
+          'updatedAt'
+        ])
+        && request.resource.data.status in [
+          'submitted',
+          'Submitted',
+          'Needs Review',
+          'Approved',
+          'Returned',
+          'Rejected'
+        ]
+        && (!('trainerNote' in request.resource.data)
+          || textAtMost(request.resource.data.trainerNote, 8000))
+        && (!('reviewedAt' in request.resource.data)
+          || request.resource.data.reviewedAt == request.time)
+        && (!('updatedAt' in request.resource.data)
+          || validUpdatedAt());
     }
 
     match /volunteer_training_completions/{completionId} {
-      allow create: if signedIn()
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.reflection is string
-        && request.resource.data.reflection.size() <= 8000;
+      allow create: if validTrainingCompletionCreate();
+      allow get, list: if isTrainer()
+        || (signedIn() && resource.data.uid == currentUid());
+      allow update: if validTrainingReviewUpdate();
+      allow delete: if isVolunteerAdmin();
+    }
 
-      allow read, update, delete: if isAdmin();
+
+    // ========================================================================
+    // SECTION 19 — VOLUNTEER ACTIVITY UPDATES
+    // ========================================================================
+
+    function validVolunteerActivityCreate() {
+      return volunteerCan('activity:create')
+        && verifyFields(
+          [
+            'uid',
+            'email',
+            'name',
+            'team',
+            'role',
+            'type',
+            'summary',
+            'status',
+            'createdAt'
+          ],
+          ['updatedAt']
+        )
+        && request.resource.data.uid == currentUid()
+        && request.resource.data.email == currentVolunteer().email
+        && request.resource.data.name == currentVolunteer().name
+        && request.resource.data.team == currentVolunteer().team
+        && request.resource.data.role == currentVolunteer().role
+        && textBetween(request.resource.data.type, 1, 160)
+        && textBetween(request.resource.data.summary, 1, 8000)
+        && request.resource.data.status == 'submitted'
+        && validCreatedAt()
+        && (!('updatedAt' in request.resource.data)
+          || validUpdatedAt());
     }
 
     match /volunteer_activity_updates/{activityId} {
-      allow create: if signedIn()
-        && request.resource.data.uid == request.auth.uid;
-
-      allow read, update, delete: if isAdmin();
+      allow create: if validVolunteerActivityCreate();
+      allow get, list: if isVolunteerAdmin()
+        || isTrainer()
+        || (signedIn() && resource.data.uid == currentUid());
+      allow update, delete: if isVolunteerAdmin();
     }
 
-    match /volunteer_service_logs/{logId} {
-      allow create: if signedIn()
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.summary is string
-        && request.resource.data.summary.size() >= 1
-        && request.resource.data.summary.size() <= 8000;
 
-      allow read, update, delete: if isAdmin();
+    // ========================================================================
+    // SECTION 20 — VOLUNTEER SERVICE LOGS
+    // ========================================================================
+
+    function validVolunteerServiceLogCreate() {
+      return volunteerCan('service:log')
+        && request.resource.data.keys().hasAll([
+          'uid',
+          'email',
+          'name',
+          'team',
+          'date',
+          'minutes',
+          'type',
+          'summary',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'name',
+          'team',
+          'date',
+          'minutes',
+          'type',
+          'summary',
+          'status',
+          'approvalStatus',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.uid == currentUid()
+        && request.resource.data.email == currentVolunteer().email
+        && request.resource.data.name == currentVolunteer().name
+        && request.resource.data.team == currentVolunteer().team
+        && textBetween(request.resource.data.date, 1, 80)
+        && request.resource.data.minutes is int
+        && request.resource.data.minutes > 0
+        && request.resource.data.minutes <= 10080
+        && textBetween(request.resource.data.type, 1, 160)
+        && textBetween(request.resource.data.summary, 1, 8000)
+        && request.resource.data.status in [
+          'submitted',
+          'Pending Review'
+        ]
+        && (!('approvalStatus' in request.resource.data)
+          || request.resource.data.approvalStatus == 'Pending')
+        && validCreatedAt()
+        && (!('updatedAt' in request.resource.data)
+          || validUpdatedAt());
+    }
+
+    function validServiceReviewUpdate() {
+      return canApproveService()
+        && changedOnly([
+          'status',
+          'approvalStatus',
+          'reviewedBy',
+          'reviewedAt',
+          'reviewNote',
+          'updatedAt'
+        ])
+        && request.resource.data.status in [
+          'submitted',
+          'Pending Review',
+          'Approved',
+          'Rejected',
+          'approved',
+          'rejected'
+        ]
+        && (!('approvalStatus' in request.resource.data)
+          || request.resource.data.approvalStatus in [
+            'Pending',
+            'Approved',
+            'Rejected',
+            'approved',
+            'rejected'
+          ])
+        && (!('reviewNote' in request.resource.data)
+          || textAtMost(request.resource.data.reviewNote, 5000))
+        && (!('reviewedAt' in request.resource.data)
+          || request.resource.data.reviewedAt == request.time)
+        && validUpdatedAt();
+    }
+
+    match /volunteer_service_logs/{serviceLogId} {
+      allow create: if validVolunteerServiceLogCreate();
+      allow get, list: if canApproveService()
+        || (signedIn() && resource.data.uid == currentUid());
+      allow update: if validServiceReviewUpdate();
+      allow delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 21 — CARE / OUTREACH PROJECTS
+    // ========================================================================
+
+    function validVolunteerCareProjectCreate() {
+      return volunteerCareProjectsOpen()
+        && volunteerCan('outreach:create')
+        && verifyFields(
+          [
+            'uid',
+            'email',
+            'name',
+            'team',
+            'title',
+            'type',
+            'purpose',
+            'support',
+            'status',
+            'createdAt',
+            'updatedAt'
+          ],
+          []
+        )
+        && request.resource.data.uid == currentUid()
+        && request.resource.data.email == currentVolunteer().email
+        && request.resource.data.name == currentVolunteer().name
+        && request.resource.data.team == currentVolunteer().team
+        && textBetween(request.resource.data.title, 1, 240)
+        && textBetween(request.resource.data.type, 1, 160)
+        && textBetween(request.resource.data.purpose, 1, 8000)
+        && textAtMost(request.resource.data.support, 8000)
+        && request.resource.data.status == 'submitted'
+        && validCreateTimestamps();
+    }
+
+    function validCareProjectReviewUpdate() {
+      return isVolunteerAdmin()
+        && changedOnly([
+          'status',
+          'reviewedBy',
+          'reviewedAt',
+          'adminNote',
+          'updatedAt'
+        ])
+        && request.resource.data.status in [
+          'submitted',
+          'under review',
+          'approved',
+          'rejected',
+          'completed',
+          'cancelled'
+        ]
+        && validUpdatedAt();
     }
 
     match /volunteer_care_projects/{projectId} {
-      allow create: if signedIn()
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.title is string
-        && request.resource.data.title.size() >= 1
-        && request.resource.data.title.size() <= 240
-        && request.resource.data.purpose is string
-        && request.resource.data.purpose.size() >= 1
-        && request.resource.data.purpose.size() <= 8000
-        && request.resource.data.status == 'submitted';
+      allow create: if validVolunteerCareProjectCreate();
+      allow get, list: if isVolunteerAdmin()
+        || isTrainer()
+        || (signedIn() && resource.data.uid == currentUid());
+      allow update: if validCareProjectReviewUpdate();
+      allow delete: if isVolunteerAdmin();
+    }
 
-      allow read, update, delete: if isAdmin();
+
+    // ========================================================================
+    // SECTION 22 — VOLUNTEER ASSIGNMENTS / TASKS
+    // ========================================================================
+
+    function validAssignmentDocument() {
+      return request.resource.data.keys().hasAll([
+          'title',
+          'description',
+          'priority',
+          'dueDate',
+          'status',
+          'assignedToUid',
+          'assignedToEmail',
+          'assignedToName',
+          'assignedBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'title',
+          'description',
+          'priority',
+          'dueDate',
+          'status',
+          'assignedToUid',
+          'assignedToEmail',
+          'assignedToName',
+          'assignedBy',
+          'createdAt',
+          'updatedAt',
+          'completedAt',
+          'volunteerResponse',
+          'adminNote'
+        ])
+        && textBetween(request.resource.data.title, 1, 240)
+        && textAtMost(request.resource.data.description, 8000)
+        && request.resource.data.priority in [
+          'low',
+          'normal',
+          'high',
+          'urgent'
+        ]
+        && textAtMost(request.resource.data.dueDate, 100)
+        && request.resource.data.status in [
+          'open',
+          'in progress',
+          'completed',
+          'cancelled',
+          'closed'
+        ]
+        && textBetween(request.resource.data.assignedToUid, 1, 200)
+        && textAtMost(request.resource.data.assignedToEmail, 254)
+        && textAtMost(request.resource.data.assignedToName, 160)
+        && textAtMost(request.resource.data.assignedBy, 254)
+        && (!('volunteerResponse' in request.resource.data)
+          || textAtMost(request.resource.data.volunteerResponse, 5000));
+    }
+
+    function validVolunteerAssignmentCompletion() {
+      return signedIn()
+        && resource.data.assignedToUid == currentUid()
+        && changedOnly([
+          'status',
+          'completedAt',
+          'volunteerResponse',
+          'updatedAt'
+        ])
+        && request.resource.data.assignedToUid
+          == resource.data.assignedToUid
+        && request.resource.data.status == 'completed'
+        && request.resource.data.completedAt == request.time
+        && (!('volunteerResponse' in request.resource.data)
+          || textAtMost(request.resource.data.volunteerResponse, 5000))
+        && validUpdatedAt();
     }
 
     match /volunteer_assignments/{assignmentId} {
-      allow get, list: if isAdmin()
-        || (
-          signedIn()
-          && resource.data.assignedToUid == request.auth.uid
-        );
+      allow create: if isTrainer()
+        && validAssignmentDocument()
+        && validCreateTimestamps();
+      allow get, list: if isTrainer()
+        || (signedIn() && resource.data.assignedToUid == currentUid());
+      allow update: if (
+          isTrainer()
+          && validAssignmentDocument()
+          && validUpdatedAt()
+        )
+        || validVolunteerAssignmentCompletion();
+      allow delete: if isTrainer();
+    }
 
-      allow create, delete: if isAdmin();
 
-      allow update: if isAdmin()
-        || (
-          signedIn()
-          && resource.data.assignedToUid == request.auth.uid
-          && request.resource.data.assignedToUid == resource.data.assignedToUid
-          && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly([
-              'status',
-              'completedAt',
-              'volunteerResponse',
-              'updatedAt'
-            ])
-        );
+    // ========================================================================
+    // SECTION 23 — VOLUNTEER CONTACT / LEADERSHIP MESSAGES
+    // ========================================================================
+
+    function validVolunteerContactCreate() {
+      return signedIn()
+        && volunteerProfileExists()
+        && request.resource.data.keys().hasAll([
+          'uid',
+          'email',
+          'name',
+          'type',
+          'subject',
+          'message',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'name',
+          'type',
+          'subject',
+          'message',
+          'status',
+          'source',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.uid == currentUid()
+        && request.resource.data.email == currentVolunteer().email
+        && request.resource.data.name == currentVolunteer().name
+        && textBetween(request.resource.data.type, 1, 160)
+        && textBetween(request.resource.data.subject, 1, 240)
+        && textBetween(request.resource.data.message, 1, 10000)
+        && request.resource.data.status == 'open'
+        && (!('source' in request.resource.data)
+          || textAtMost(request.resource.data.source, 120))
+        && validCreatedAt()
+        && (!('updatedAt' in request.resource.data)
+          || validUpdatedAt());
+    }
+
+    function validVolunteerContactLeadershipUpdate() {
+      return isTrainer()
+        && changedOnly([
+          'status',
+          'closedBy',
+          'closedAt',
+          'adminNote',
+          'updatedAt'
+        ])
+        && request.resource.data.status in [
+          'open',
+          'in review',
+          'closed'
+        ]
+        && (!('closedAt' in request.resource.data)
+          || request.resource.data.closedAt == request.time)
+        && validUpdatedAt();
     }
 
     match /volunteer_contacts/{contactId} {
-      allow create: if signedIn()
-        && request.resource.data.uid == request.auth.uid;
+      allow create: if validVolunteerContactCreate();
+      allow get, list: if isTrainer()
+        || (signedIn() && resource.data.uid == currentUid());
+      allow update: if validVolunteerContactLeadershipUpdate();
+      allow delete: if isVolunteerAdmin();
+    }
 
-      allow read, update, delete: if isAdmin();
+
+    // ========================================================================
+    // SECTION 24 — VOLUNTEER LEAVE REQUESTS
+    // ========================================================================
+
+    function validVolunteerLeaveCreate() {
+      return signedIn()
+        && volunteerProfileExists()
+        && verifyFields(
+          [
+            'uid',
+            'email',
+            'name',
+            'startDate',
+            'endDate',
+            'reason',
+            'status',
+            'createdAt'
+          ],
+          ['updatedAt']
+        )
+        && request.resource.data.uid == currentUid()
+        && request.resource.data.email == currentVolunteer().email
+        && request.resource.data.name == currentVolunteer().name
+        && textBetween(request.resource.data.startDate, 1, 100)
+        && textBetween(request.resource.data.endDate, 1, 100)
+        && textBetween(request.resource.data.reason, 1, 8000)
+        && request.resource.data.status == 'submitted'
+        && validCreatedAt()
+        && (!('updatedAt' in request.resource.data)
+          || validUpdatedAt());
+    }
+
+    function validLeaveAdminUpdate() {
+      return isVolunteerAdmin()
+        && changedOnly([
+          'status',
+          'reviewedBy',
+          'reviewedAt',
+          'adminNote',
+          'updatedAt'
+        ])
+        && request.resource.data.status in [
+          'submitted',
+          'under review',
+          'approved',
+          'denied',
+          'cancelled',
+          'completed'
+        ]
+        && validUpdatedAt();
     }
 
     match /volunteer_leave_requests/{leaveId} {
-      allow create: if signedIn()
-        && request.resource.data.uid == request.auth.uid;
+      allow create: if validVolunteerLeaveCreate();
+      allow get, list: if isVolunteerAdmin()
+        || (signedIn() && resource.data.uid == currentUid());
+      allow update: if validLeaveAdminUpdate();
+      allow delete: if isVolunteerAdmin();
+    }
 
-      allow read, update, delete: if isAdmin();
+
+    // ========================================================================
+    // SECTION 25 — VOLUNTEER SUGGESTIONS
+    // ========================================================================
+
+    function validVolunteerSuggestionCreate() {
+      return volunteerSuggestionsOpen()
+        && verifyFields(
+          [
+            'name',
+            'email',
+            'emailKey',
+            'area',
+            'title',
+            'details',
+            'status',
+            'createdAt',
+            'updatedAt'
+          ],
+          []
+        )
+        && textBetween(request.resource.data.name, 1, 160)
+        && textBetween(request.resource.data.email, 3, 254)
+        && textBetween(request.resource.data.emailKey, 3, 300)
+        && textBetween(request.resource.data.area, 1, 160)
+        && textBetween(request.resource.data.title, 1, 240)
+        && textBetween(request.resource.data.details, 1, 8000)
+        && request.resource.data.status == 'submitted'
+        && validCreateTimestamps();
+    }
+
+    function validSuggestionAdminUpdate() {
+      return isVolunteerAdmin()
+        && changedOnly([
+          'status',
+          'reviewedBy',
+          'reviewedAt',
+          'adminNote',
+          'updatedAt'
+        ])
+        && request.resource.data.status in [
+          'submitted',
+          'under review',
+          'reviewed',
+          'accepted',
+          'declined',
+          'archived'
+        ]
+        && validUpdatedAt();
     }
 
     match /volunteer_suggestions/{suggestionId} {
-      allow create: if
-        request.resource.data.title is string
-        && request.resource.data.title.size() >= 1
-        && request.resource.data.title.size() <= 240
-        && request.resource.data.details is string
-        && request.resource.data.details.size() >= 1
-        && request.resource.data.details.size() <= 8000
-        && request.resource.data.status == 'submitted'
-        && !request.resource.data.keys().hasAny([
-          'approved',
-          'approvedBy',
-          'reviewedBy',
-          'adminNote'
-        ]);
+      allow create: if validVolunteerSuggestionCreate();
+      allow get, list: if isVolunteerAdmin();
+      allow update: if validSuggestionAdminUpdate();
+      allow delete: if isVolunteerAdmin();
+    }
 
-      allow read, update, delete: if isAdmin();
+
+    // ========================================================================
+    // SECTION 26 — PERFORMANCE REVIEWS
+    // ========================================================================
+
+    function validPerformanceReviewDocument() {
+      return verifyFields(
+          [
+            'uid',
+            'volunteerName',
+            'rating',
+            'strengths',
+            'growth',
+            'createdBy',
+            'createdAt',
+            'updatedAt'
+          ],
+          ['privateNote']
+        )
+        && textBetween(request.resource.data.uid, 1, 200)
+        && textAtMost(request.resource.data.volunteerName, 160)
+        && request.resource.data.rating in [
+          'Excellent',
+          'Good',
+          'Needs Growth',
+          'Concern'
+        ]
+        && textAtMost(request.resource.data.strengths, 8000)
+        && textAtMost(request.resource.data.growth, 8000)
+        && textAtMost(request.resource.data.createdBy, 254)
+        && (!('privateNote' in request.resource.data)
+          || textAtMost(request.resource.data.privateNote, 8000));
+    }
+
+    match /volunteer_performance_reviews/{reviewId} {
+      allow get, list: if canCreatePerformanceReview()
+        || (signedIn() && resource.data.uid == currentUid());
+      allow create: if canCreatePerformanceReview()
+        && validPerformanceReviewDocument()
+        && validCreateTimestamps();
+      allow update: if canCreatePerformanceReview()
+        && validPerformanceReviewDocument()
+        && validUpdatedAt();
+      allow delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 27 — VOLUNTEER ANNOUNCEMENTS
+    // ========================================================================
+
+    function validVolunteerAnnouncementDocument() {
+      return verifyFields(
+          [
+            'title',
+            'message',
+            'priority',
+            'audience',
+            'createdBy',
+            'createdAt',
+            'updatedAt'
+          ],
+          ['expiresAt', 'active']
+        )
+        && textBetween(request.resource.data.title, 1, 240)
+        && textBetween(request.resource.data.message, 1, 10000)
+        && request.resource.data.priority in [
+          'Normal',
+          'Important',
+          'Urgent'
+        ]
+        && textBetween(request.resource.data.audience, 1, 160)
+        && textAtMost(request.resource.data.createdBy, 254)
+        && (!('active' in request.resource.data)
+          || request.resource.data.active is bool);
     }
 
     match /volunteer_announcements/{announcementId} {
       allow read: if signedIn();
-      allow create, update, delete: if isAdmin();
+      allow create: if canPostVolunteerAnnouncements()
+        && validVolunteerAnnouncementDocument()
+        && validCreateTimestamps();
+      allow update: if canPostVolunteerAnnouncements()
+        && validVolunteerAnnouncementDocument()
+        && validUpdatedAt();
+      allow delete: if canPostVolunteerAnnouncements();
+    }
+
+
+    // ========================================================================
+    // SECTION 28 — VOLUNTEER BADGES / RECOGNITION
+    // ========================================================================
+
+    function validVolunteerBadgeDocument() {
+      return verifyFields(
+          [
+            'uid',
+            'email',
+            'volunteerName',
+            'title',
+            'message',
+            'createdBy',
+            'createdAt',
+            'updatedAt'
+          ],
+          ['badgeName', 'category', 'active']
+        )
+        && textBetween(request.resource.data.uid, 1, 200)
+        && textAtMost(request.resource.data.email, 254)
+        && textAtMost(request.resource.data.volunteerName, 160)
+        && textBetween(request.resource.data.title, 1, 240)
+        && textAtMost(request.resource.data.message, 5000)
+        && textAtMost(request.resource.data.createdBy, 254)
+        && (!('badgeName' in request.resource.data)
+          || textAtMost(request.resource.data.badgeName, 240))
+        && (!('category' in request.resource.data)
+          || textAtMost(request.resource.data.category, 120))
+        && (!('active' in request.resource.data)
+          || request.resource.data.active is bool);
+    }
+
+    match /volunteer_badges/{badgeId} {
+      allow get, list: if canCreateRecognition()
+        || (signedIn() && resource.data.uid == currentUid());
+      allow create: if canCreateRecognition()
+        && validVolunteerBadgeDocument()
+        && validCreateTimestamps();
+      allow update: if canCreateRecognition()
+        && validVolunteerBadgeDocument()
+        && validUpdatedAt();
+      allow delete: if canCreateRecognition();
+    }
+
+
+    // ========================================================================
+    // SECTION 29 — VOLUNTEER PROGRAM SETTINGS
+    // ========================================================================
+
+    function validVolunteerProgramSettings() {
+      return request.resource.data.keys().hasOnly([
+          'applicationsOpen',
+          'chapterRequestsOpen',
+          'suggestionsOpen',
+          'careProjectsOpen',
+          'maintenanceMode',
+          'defaultTrainerEmail',
+          'portalNotice',
+          'updatedAt',
+          'updatedBy'
+        ])
+        && (!('applicationsOpen' in request.resource.data)
+          || request.resource.data.applicationsOpen is bool)
+        && (!('chapterRequestsOpen' in request.resource.data)
+          || request.resource.data.chapterRequestsOpen is bool)
+        && (!('suggestionsOpen' in request.resource.data)
+          || request.resource.data.suggestionsOpen is bool)
+        && (!('careProjectsOpen' in request.resource.data)
+          || request.resource.data.careProjectsOpen is bool)
+        && (!('maintenanceMode' in request.resource.data)
+          || request.resource.data.maintenanceMode is bool)
+        && (!('defaultTrainerEmail' in request.resource.data)
+          || textAtMost(request.resource.data.defaultTrainerEmail, 254))
+        && (!('portalNotice' in request.resource.data)
+          || textAtMost(request.resource.data.portalNotice, 5000))
+        && (!('updatedAt' in request.resource.data)
+          || validUpdatedAt());
     }
 
     match /volunteer_settings/{settingId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update: if isVolunteerAdmin()
+        && validVolunteerProgramSettings();
+      allow delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 30 — VOLUNTEER NOTES
+    // ========================================================================
+
+    function validVolunteerNoteDocument() {
+      return request.resource.data.keys().hasAll(['note'])
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'requestId',
+          'note',
+          'category',
+          'createdBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.note, 1, 10000)
+        && (!('category' in request.resource.data)
+          || textAtMost(request.resource.data.category, 160));
     }
 
     match /volunteer_notes/{noteId} {
-      allow read, create, update, delete: if isAdmin();
+      allow read: if isVolunteerAdmin();
+      allow create, update: if isVolunteerAdmin()
+        && validVolunteerNoteDocument();
+      allow delete: if isVolunteerAdmin();
     }
 
-    match /volunteer_badges/{badgeId} {
-      allow read: if signedIn();
-      allow create, update, delete: if isAdmin();
+
+    // ========================================================================
+    // SECTION 31 — CORE ADMIN NOTES
+    // ========================================================================
+
+    function validCoreAdminNoteCreate() {
+      return verifyFields(
+          ['requestId', 'note', 'adminEmail', 'createdAt'],
+          []
+        )
+        && textBetween(request.resource.data.requestId, 1, 300)
+        && textBetween(request.resource.data.note, 1, 10000)
+        && textAtMost(request.resource.data.adminEmail, 254)
+        && validCreatedAt();
     }
 
-    match /chapter_reports/{reportId} {
-      allow create: if signedIn()
-        && (
-          !('uid' in request.resource.data)
-          || request.resource.data.uid == request.auth.uid
-        );
-
-      allow read, update, delete: if isAdmin();
+    function validCoreAdminNoteUpdate() {
+      return changedOnly(['note', 'editedAt', 'editedBy'])
+        && textBetween(request.resource.data.note, 1, 10000)
+        && (!('editedBy' in request.resource.data)
+          || textAtMost(request.resource.data.editedBy, 254));
     }
-
-    // ============================================================
-    // ADMIN NOTES
-    // ============================================================
 
     match /admin_notes/{noteId} {
-      allow read, create, update, delete: if isAdmin();
+      allow get, list: if isCoreAdmin();
+      allow create: if isCoreAdmin()
+        && validCoreAdminNoteCreate();
+      allow update: if isCoreAdmin()
+        && validCoreAdminNoteUpdate();
+      allow delete: if isCoreAdmin();
     }
 
-    // ============================================================
-    // BIBLES WITHIN REACH — PARTNERSHIP APPLICATIONS
-    // ============================================================
+
+    // ========================================================================
+    // SECTION 32 — BIBLES WITHIN REACH PARTNERSHIP APPLICATIONS
+    // ========================================================================
 
     function validBwrPartnerApplicationCreate() {
       return verifyFields(
@@ -510,122 +2343,1135 @@ service cloud.firestore {
         && request.resource.data.status == 'submitted'
         && request.resource.data.source == 'bwr-partners-page'
         && request.resource.data.schemaVersion == 1
-        && freshCreateTimestamps();
+        && validCreateTimestamps();
     }
 
-    function validBwrStatusReviewUpdate() {
-      return request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['status', 'reviewedAt', 'reviewedBy', 'updatedAt'])
+    function validBwrPartnerApplicationAdminUpdate() {
+      return isCoreAdmin()
+        && changedOnly([
+          'status',
+          'reviewedAt',
+          'reviewedBy',
+          'adminNote',
+          'adminNoteUpdatedAt',
+          'adminNoteUpdatedBy',
+          'updatedAt'
+        ])
         && request.resource.data.status in [
           'submitted',
           'review',
           'approved',
           'declined'
         ]
-        && request.resource.data.reviewedAt == request.time
-        && request.resource.data.reviewedBy is string
-        && request.resource.data.reviewedBy.size() >= 3
-        && request.resource.data.reviewedBy.size() <= 254
-        && freshUpdateTimestamp();
-    }
-
-    function validBwrAdminNoteUpdate() {
-      return request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly([
-            'adminNote',
-            'adminNoteUpdatedAt',
-            'adminNoteUpdatedBy',
-            'updatedAt'
-          ])
-        && request.resource.data.adminNote is string
-        && request.resource.data.adminNote.size() <= 5000
-        && request.resource.data.adminNoteUpdatedAt == request.time
-        && request.resource.data.adminNoteUpdatedBy is string
-        && request.resource.data.adminNoteUpdatedBy.size() >= 3
-        && request.resource.data.adminNoteUpdatedBy.size() <= 254
-        && freshUpdateTimestamp();
+        && (!('adminNote' in request.resource.data)
+          || textAtMost(request.resource.data.adminNote, 8000))
+        && validUpdatedAt();
     }
 
     match /bwr_partner_applications/{applicationId} {
       allow create: if validBwrPartnerApplicationCreate();
-
-      allow read: if isAdmin();
-
-      // Applicant answers are immutable after submission.
-      // Admins may change only review metadata or internal notes.
-      allow update: if isAdmin()
-        && (
-          validBwrStatusReviewUpdate()
-          || validBwrAdminNoteUpdate()
-        );
-
-      allow delete: if isAdmin();
+      allow get, list: if isCoreAdmin();
+      allow update: if validBwrPartnerApplicationAdminUpdate();
+      allow delete: if isCoreAdmin();
     }
 
-    // Reserved BWR operational collections.
-    // These remain admin-only until the partner portal/reporting workflow
-    // is intentionally implemented with partner-specific authorization.
+
+    // ========================================================================
+    // SECTION 33 — BWR APPROVED PARTNERS
+    // ========================================================================
+
+    function validBwrPartnerDocument() {
+      return request.resource.data.keys().hasAll([
+          'partnerId',
+          'organizationName',
+          'partnershipTypes',
+          'status',
+          'agreementAccepted',
+          'biblesOnHand',
+          'biblesLifetimeReceived',
+          'biblesLifetimeDistributed'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'partnerId',
+          'applicationId',
+          'organizationName',
+          'organizationType',
+          'contactName',
+          'contactEmail',
+          'contactPhone',
+          'serviceArea',
+          'partnershipTypes',
+          'status',
+          'approvedAt',
+          'approvedBy',
+          'agreementAccepted',
+          'agreementAcceptedAt',
+          'biblesOnHand',
+          'biblesLifetimeReceived',
+          'biblesLifetimeDistributed',
+          'notes',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.partnerId, 1, 120)
+        && textBetween(request.resource.data.organizationName, 1, 200)
+        && request.resource.data.partnershipTypes is list
+        && request.resource.data.status in [
+          'pending',
+          'active',
+          'paused',
+          'suspended',
+          'terminated',
+          'closed'
+        ]
+        && request.resource.data.agreementAccepted is bool
+        && nonNegativeInt(request.resource.data.biblesOnHand)
+        && nonNegativeInt(request.resource.data.biblesLifetimeReceived)
+        && nonNegativeInt(request.resource.data.biblesLifetimeDistributed)
+        && (!('notes' in request.resource.data)
+          || textAtMost(request.resource.data.notes, 10000));
+    }
+
     match /bwr_partners/{partnerId} {
-      allow read, create, update, delete: if isAdmin();
+      allow read: if isCoreAdmin();
+      allow create, update: if isCoreAdmin()
+        && validBwrPartnerDocument();
+      allow delete: if isCoreAdmin();
     }
 
-    match /bwr_distribution_reports/{reportId} {
-      allow read, create, update, delete: if isAdmin();
+
+    // ========================================================================
+    // SECTION 34 — BWR BIBLE REQUESTS
+    // ========================================================================
+
+    function validBwrBibleRequestDocument() {
+      return request.resource.data.keys().hasAll([
+          'partnerId',
+          'requestedQuantity',
+          'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'partnerId',
+          'organizationName',
+          'requestedQuantity',
+          'reason',
+          'distributionPlan',
+          'neededBy',
+          'status',
+          'reviewedQuantity',
+          'reviewedBy',
+          'reviewedAt',
+          'adminNote',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.partnerId, 1, 120)
+        && positiveInt(request.resource.data.requestedQuantity)
+        && (!('reason' in request.resource.data)
+          || textAtMost(request.resource.data.reason, 8000))
+        && (!('distributionPlan' in request.resource.data)
+          || textAtMost(request.resource.data.distributionPlan, 8000))
+        && request.resource.data.status in [
+          'submitted',
+          'review',
+          'approved',
+          'partially approved',
+          'declined',
+          'fulfilled',
+          'cancelled'
+        ]
+        && (!('reviewedQuantity' in request.resource.data)
+          || nonNegativeInt(request.resource.data.reviewedQuantity));
     }
 
-    match /bwr_bible_requests/{requestId} {
-      allow read, create, update, delete: if isAdmin();
+    match /bwr_bible_requests/{bibleRequestId} {
+      allow read: if isCoreAdmin();
+      allow create, update: if isCoreAdmin()
+        && validBwrBibleRequestDocument();
+      allow delete: if isCoreAdmin();
     }
 
-    // ============================================================
-    // AUDIT LOG
-    // ============================================================
 
-    match /audit_logs/{logId} {
-      allow read: if isAdmin();
+    // ========================================================================
+    // SECTION 35 — BWR DISTRIBUTION REPORTS
+    // ========================================================================
 
-      allow create: if isAdmin()
-        && request.resource.data.action is string
-        && request.resource.data.action.size() >= 1
-        && request.resource.data.action.size() <= 160
-        && request.resource.data.adminEmail is string
-        && request.resource.data.adminEmail == request.auth.token.email
-        && request.resource.data.createdAt == request.time;
+    function validBwrDistributionReportDocument() {
+      return request.resource.data.keys().hasAll([
+          'partnerId',
+          'biblesReceived',
+          'biblesDistributed',
+          'biblesRemaining',
+          'certifiedAccurate',
+          'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'partnerId',
+          'organizationName',
+          'reportingContact',
+          'periodStart',
+          'periodEnd',
+          'biblesReceived',
+          'biblesDistributed',
+          'biblesRemaining',
+          'distributionSetting',
+          'serviceArea',
+          'notes',
+          'certifiedAccurate',
+          'status',
+          'reviewedBy',
+          'reviewedAt',
+          'adminNote',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.partnerId, 1, 120)
+        && nonNegativeInt(request.resource.data.biblesReceived)
+        && nonNegativeInt(request.resource.data.biblesDistributed)
+        && nonNegativeInt(request.resource.data.biblesRemaining)
+        && request.resource.data.certifiedAccurate is bool
+        && request.resource.data.status in [
+          'submitted',
+          'review',
+          'accepted',
+          'returned',
+          'corrected',
+          'archived'
+        ]
+        && (!('notes' in request.resource.data)
+          || textAtMost(request.resource.data.notes, 10000));
+    }
 
-      // Audit records are append-only.
+    match /bwr_distribution_reports/{distributionReportId} {
+      allow read: if isCoreAdmin();
+      allow create, update: if isCoreAdmin()
+        && validBwrDistributionReportDocument();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 36 — BWR BIBLE TRANSFERS
+    // ========================================================================
+
+    function validBwrBibleTransferDocument() {
+      return request.resource.data.keys().hasAll([
+          'transferId',
+          'partnerId',
+          'quantity',
+          'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'transferId',
+          'partnerId',
+          'organizationName',
+          'quantity',
+          'inventoryItemId',
+          'authorizedBy',
+          'releasedBy',
+          'receivedBy',
+          'transferDate',
+          'status',
+          'notes',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.transferId, 1, 120)
+        && textBetween(request.resource.data.partnerId, 1, 120)
+        && positiveInt(request.resource.data.quantity)
+        && request.resource.data.status in [
+          'authorized',
+          'released',
+          'received',
+          'cancelled',
+          'reconciled'
+        ]
+        && (!('notes' in request.resource.data)
+          || textAtMost(request.resource.data.notes, 8000));
+    }
+
+    match /bwr_bible_transfers/{transferId} {
+      allow read: if isCoreAdmin();
+      allow create, update: if isCoreAdmin()
+        && validBwrBibleTransferDocument();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 37 — BWR INVENTORY
+    // ========================================================================
+
+    function validBwrInventoryDocument() {
+      return request.resource.data.keys().hasAll([
+          'inventoryItemId',
+          'quantityReceived',
+          'quantityAvailable',
+          'quantityReserved',
+          'quantityTransferred',
+          'quantityDistributedDirect',
+          'unitCost',
+          'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'inventoryItemId',
+          'sku',
+          'vendor',
+          'description',
+          'quantityReceived',
+          'quantityAvailable',
+          'quantityReserved',
+          'quantityTransferred',
+          'quantityDistributedDirect',
+          'unitCost',
+          'status',
+          'location',
+          'notes',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.inventoryItemId, 1, 120)
+        && (!('sku' in request.resource.data)
+          || textAtMost(request.resource.data.sku, 120))
+        && (!('vendor' in request.resource.data)
+          || textAtMost(request.resource.data.vendor, 200))
+        && nonNegativeInt(request.resource.data.quantityReceived)
+        && nonNegativeInt(request.resource.data.quantityAvailable)
+        && nonNegativeInt(request.resource.data.quantityReserved)
+        && nonNegativeInt(request.resource.data.quantityTransferred)
+        && nonNegativeInt(request.resource.data.quantityDistributedDirect)
+        && nonNegativeNumber(request.resource.data.unitCost)
+        && request.resource.data.status in [
+          'planned',
+          'ordered',
+          'received',
+          'active',
+          'depleted',
+          'closed'
+        ];
+    }
+
+    match /bwr_inventory/{inventoryId} {
+      allow read: if isCoreAdmin();
+      allow create, update: if isCoreAdmin()
+        && validBwrInventoryDocument();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 38 — BWR INVENTORY ADJUSTMENTS (APPEND ONLY)
+    // ========================================================================
+
+    function validBwrInventoryAdjustmentCreate() {
+      return verifyFields(
+          [
+            'inventoryItemId',
+            'adjustmentType',
+            'quantity',
+            'reason',
+            'previousQuantity',
+            'newQuantity',
+            'authorizedBy',
+            'createdAt'
+          ],
+          []
+        )
+        && textBetween(request.resource.data.inventoryItemId, 1, 120)
+        && request.resource.data.adjustmentType in [
+          'increase',
+          'decrease',
+          'damage',
+          'loss',
+          'correction',
+          'return'
+        ]
+        && positiveInt(request.resource.data.quantity)
+        && textBetween(request.resource.data.reason, 1, 5000)
+        && nonNegativeInt(request.resource.data.previousQuantity)
+        && nonNegativeInt(request.resource.data.newQuantity)
+        && textAtMost(request.resource.data.authorizedBy, 254)
+        && validCreatedAt();
+    }
+
+    match /bwr_inventory_adjustments/{adjustmentId} {
+      allow get, list: if isCoreAdmin();
+      allow create: if isCoreAdmin()
+        && validBwrInventoryAdjustmentCreate();
       allow update, delete: if false;
     }
 
-    // ============================================================
-    // SITE SETTINGS
-    // ============================================================
 
-    match /settings/{settingId} {
+    // ========================================================================
+    // SECTION 39 — BWR PURCHASE ORDERS
+    // ========================================================================
+
+    function validBwrPurchaseOrderDocument() {
+      return request.resource.data.keys().hasAll([
+          'purchaseOrderId',
+          'vendor',
+          'quantity',
+          'unitPrice',
+          'subtotal',
+          'shipping',
+          'total',
+          'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'purchaseOrderId',
+          'vendor',
+          'vendorSku',
+          'description',
+          'quantity',
+          'unitPrice',
+          'subtotal',
+          'shipping',
+          'total',
+          'status',
+          'approvedBy',
+          'orderedBy',
+          'orderDate',
+          'expectedDate',
+          'vendorOrderNumber',
+          'notes',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.purchaseOrderId, 1, 120)
+        && textBetween(request.resource.data.vendor, 1, 200)
+        && positiveInt(request.resource.data.quantity)
+        && nonNegativeNumber(request.resource.data.unitPrice)
+        && nonNegativeNumber(request.resource.data.subtotal)
+        && nonNegativeNumber(request.resource.data.shipping)
+        && nonNegativeNumber(request.resource.data.total)
+        && request.resource.data.status in [
+          'draft',
+          'approved',
+          'ordered',
+          'partially received',
+          'received',
+          'cancelled',
+          'closed'
+        ];
+    }
+
+    match /bwr_purchase_orders/{purchaseOrderId} {
+      allow read: if isCoreAdmin();
+      allow create, update: if isCoreAdmin()
+        && validBwrPurchaseOrderDocument();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 40 — BWR RECEIVING REPORTS
+    // ========================================================================
+
+    function validBwrReceivingReportDocument() {
+      return request.resource.data.keys().hasAll([
+          'purchaseOrderId',
+          'quantityExpected',
+          'quantityReceived',
+          'quantityDamaged',
+          'quantityAccepted',
+          'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'purchaseOrderId',
+          'vendor',
+          'quantityExpected',
+          'quantityReceived',
+          'quantityDamaged',
+          'quantityAccepted',
+          'receivedBy',
+          'receivedAt',
+          'conditionNotes',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.purchaseOrderId, 1, 120)
+        && nonNegativeInt(request.resource.data.quantityExpected)
+        && nonNegativeInt(request.resource.data.quantityReceived)
+        && nonNegativeInt(request.resource.data.quantityDamaged)
+        && nonNegativeInt(request.resource.data.quantityAccepted)
+        && request.resource.data.status in [
+          'received',
+          'partial',
+          'exception',
+          'reconciled'
+        ]
+        && (!('conditionNotes' in request.resource.data)
+          || textAtMost(request.resource.data.conditionNotes, 8000));
+    }
+
+    match /bwr_receiving_reports/{receivingReportId} {
+      allow read: if isCoreAdmin();
+      allow create, update: if isCoreAdmin()
+        && validBwrReceivingReportDocument();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 41 — BWR DISTRIBUTION EVENTS
+    // ========================================================================
+
+    function validBwrDistributionEventDocument() {
+      return request.resource.data.keys().hasAll([
+          'eventId',
+          'title',
+          'authorizedQuantity',
+          'distributedQuantity',
+          'remainingQuantity',
+          'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'eventId',
+          'title',
+          'location',
+          'eventDate',
+          'authorizedQuantity',
+          'distributedQuantity',
+          'remainingQuantity',
+          'lead',
+          'partnerId',
+          'status',
+          'notes',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.eventId, 1, 120)
+        && textBetween(request.resource.data.title, 1, 240)
+        && (!('location' in request.resource.data)
+          || textAtMost(request.resource.data.location, 500))
+        && nonNegativeInt(request.resource.data.authorizedQuantity)
+        && nonNegativeInt(request.resource.data.distributedQuantity)
+        && nonNegativeInt(request.resource.data.remainingQuantity)
+        && request.resource.data.status in [
+          'planned',
+          'authorized',
+          'active',
+          'completed',
+          'cancelled',
+          'reconciled'
+        ]
+        && (!('notes' in request.resource.data)
+          || textAtMost(request.resource.data.notes, 8000));
+    }
+
+    match /bwr_distribution_events/{eventId} {
+      allow read: if isCoreAdmin();
+      allow create, update: if isCoreAdmin()
+        && validBwrDistributionEventDocument();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 42 — AUDIT LOGS (APPEND ONLY)
+    // ========================================================================
+
+    function trustedAuditWriter() {
+      return isCoreAdmin()
+        || isVolunteerAdmin()
+        || isTrainer()
+        || canApproveService()
+        || canCreatePerformanceReview()
+        || canPostVolunteerAnnouncements()
+        || canCreateRecognition();
+    }
+
+    function validAuditLogCreate() {
+      return trustedAuditWriter()
+        && request.resource.data.keys().hasAll([
+          'action',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'action',
+          'requestId',
+          'adminEmail',
+          'organizationName',
+          'details',
+          'actor',
+          'targetUid',
+          'targetId',
+          'createdAt'
+        ])
+        && textBetween(request.resource.data.action, 1, 240)
+        && (!('requestId' in request.resource.data)
+          || textAtMost(request.resource.data.requestId, 300))
+        && (!('adminEmail' in request.resource.data)
+          || textAtMost(request.resource.data.adminEmail, 254))
+        && (!('organizationName' in request.resource.data)
+          || textAtMost(request.resource.data.organizationName, 300))
+        && (!('details' in request.resource.data)
+          || request.resource.data.details is map)
+        && (!('actor' in request.resource.data)
+          || textAtMost(request.resource.data.actor, 254))
+        && (!('targetUid' in request.resource.data)
+          || textAtMost(request.resource.data.targetUid, 200))
+        && (!('targetId' in request.resource.data)
+          || textAtMost(request.resource.data.targetId, 300))
+        && validCreatedAt();
+    }
+
+    match /audit_logs/{auditId} {
+      allow get, list: if isCoreAdmin()
+        || canViewVolunteerReports();
+      allow create: if validAuditLogCreate();
+      allow update, delete: if false;
+    }
+
+
+    // ========================================================================
+    // SECTION 43 — VOLUNTEER PROGRAM STATUS
+    // ========================================================================
+
+    function validVolunteerProgramStatusDocument() {
+      return request.resource.data.keys().hasAll([
+          'label',
+          'status',
+          'message'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'label',
+          'status',
+          'message',
+          'public',
+          'createdAt',
+          'updatedAt',
+          'updatedBy'
+        ])
+        && textBetween(request.resource.data.label, 1, 200)
+        && textBetween(request.resource.data.status, 1, 80)
+        && textAtMost(request.resource.data.message, 5000)
+        && (!('public' in request.resource.data)
+          || request.resource.data.public is bool);
+    }
+
+    match /volunteer_program_status/{statusId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update: if isVolunteerAdmin()
+        && validVolunteerProgramStatusDocument();
+      allow delete: if isVolunteerAdmin();
     }
 
-    // ============================================================
-    // ADMIN AUTHORIZATION REGISTRY
-    // ============================================================
 
-    match /admins/{adminId} {
-      // The owner is the root administrator and may manage the registry.
-      allow get: if isOwner()
-        || (
-          isSelf(adminId)
-          && resource.data.active == true
-        );
+    // ========================================================================
+    // SECTION 44 — VOLUNTEER PERMISSION CATALOG
+    // ========================================================================
 
-      allow list: if isOwner();
-
-      // Nobody can grant themselves admin access.
-      allow create, update, delete: if isOwner();
+    function validPermissionCatalogDocument() {
+      return request.resource.data.keys().hasAll([
+          'id',
+          'label',
+          'description',
+          'group',
+          'active'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'label',
+          'description',
+          'group',
+          'active',
+          'createdAt',
+          'updatedAt',
+          'updatedBy'
+        ])
+        && textBetween(request.resource.data.id, 1, 160)
+        && textBetween(request.resource.data.label, 1, 200)
+        && textAtMost(request.resource.data.description, 2000)
+        && textAtMost(request.resource.data.group, 160)
+        && request.resource.data.active is bool;
     }
 
-    // ============================================================
-    // DEFAULT DENY
-    // ============================================================
+    match /volunteer_permissions/{permissionId} {
+      allow read: if signedIn();
+      allow create, update: if isCoreAdmin()
+        && validPermissionCatalogDocument();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 45 — VOLUNTEER ROLE CATALOG
+    // ========================================================================
+
+    function validVolunteerRoleDocument() {
+      return request.resource.data.keys().hasAll([
+          'roleId',
+          'name',
+          'description',
+          'defaultPermissions',
+          'active'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'roleId',
+          'name',
+          'description',
+          'defaultPermissions',
+          'active',
+          'sortOrder',
+          'createdAt',
+          'updatedAt',
+          'updatedBy'
+        ])
+        && textBetween(request.resource.data.roleId, 1, 160)
+        && textBetween(request.resource.data.name, 1, 200)
+        && textAtMost(request.resource.data.description, 3000)
+        && request.resource.data.defaultPermissions is list
+        && request.resource.data.active is bool
+        && (!('sortOrder' in request.resource.data)
+          || request.resource.data.sortOrder is int);
+    }
+
+    match /volunteer_roles/{roleId} {
+      allow read: if signedIn();
+      allow create, update: if isCoreAdmin()
+        && validVolunteerRoleDocument();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 46 — VOLUNTEER TEAM CATALOG
+    // ========================================================================
+
+    function validVolunteerTeamDocument() {
+      return request.resource.data.keys().hasAll([
+          'teamId',
+          'name',
+          'description',
+          'leadUid',
+          'leadEmail',
+          'active'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'teamId',
+          'name',
+          'description',
+          'leadUid',
+          'leadEmail',
+          'active',
+          'createdAt',
+          'updatedAt',
+          'updatedBy'
+        ])
+        && textBetween(request.resource.data.teamId, 1, 160)
+        && textBetween(request.resource.data.name, 1, 200)
+        && textAtMost(request.resource.data.description, 3000)
+        && textAtMost(request.resource.data.leadUid, 200)
+        && textAtMost(request.resource.data.leadEmail, 254)
+        && request.resource.data.active is bool;
+    }
+
+    match /volunteer_teams/{teamId} {
+      allow read: if signedIn();
+      allow create, update: if isCoreAdmin()
+        && validVolunteerTeamDocument();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 47 — VOLUNTEER EVENTS
+    // ========================================================================
+
+    function validVolunteerEventDocument() {
+      return request.resource.data.keys().hasAll([
+          'title',
+          'description',
+          'location',
+          'audience',
+          'status',
+          'createdBy'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'title',
+          'description',
+          'location',
+          'startAt',
+          'endAt',
+          'audience',
+          'status',
+          'createdBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.title, 1, 240)
+        && textAtMost(request.resource.data.description, 8000)
+        && textAtMost(request.resource.data.location, 500)
+        && textAtMost(request.resource.data.audience, 200)
+        && request.resource.data.status in [
+          'draft',
+          'scheduled',
+          'active',
+          'completed',
+          'cancelled'
+        ]
+        && textAtMost(request.resource.data.createdBy, 254);
+    }
+
+    match /volunteer_events/{eventId} {
+      allow read: if signedIn();
+      allow create, update: if canPostVolunteerAnnouncements()
+        && validVolunteerEventDocument();
+      allow delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 48 — VOLUNTEER RESOURCES
+    // ========================================================================
+
+    function validVolunteerResourceDocument() {
+      return request.resource.data.keys().hasAll([
+          'title',
+          'description',
+          'url',
+          'type',
+          'status',
+          'public'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'title',
+          'description',
+          'url',
+          'type',
+          'status',
+          'public',
+          'createdBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.title, 1, 240)
+        && textAtMost(request.resource.data.description, 5000)
+        && textAtMost(request.resource.data.url, 1000)
+        && textAtMost(request.resource.data.type, 120)
+        && request.resource.data.status in [
+          'draft',
+          'published',
+          'archived'
+        ]
+        && request.resource.data.public is bool;
+    }
+
+    match /volunteer_resources/{resourceId} {
+      allow get, list: if resource.data.public == true
+        || signedIn();
+      allow create, update: if isVolunteerAdmin()
+        && validVolunteerResourceDocument();
+      allow delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 49 — VOLUNTEER DOCUMENT LINKS
+    // ========================================================================
+
+    function validVolunteerDocumentRecord() {
+      return request.resource.data.keys().hasAll([
+          'title',
+          'description',
+          'url',
+          'documentType',
+          'audience',
+          'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'title',
+          'description',
+          'url',
+          'documentType',
+          'audience',
+          'status',
+          'createdBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.title, 1, 240)
+        && textAtMost(request.resource.data.description, 5000)
+        && textBetween(request.resource.data.url, 1, 1000)
+        && textAtMost(request.resource.data.documentType, 160)
+        && textAtMost(request.resource.data.audience, 200)
+        && request.resource.data.status in [
+          'draft',
+          'active',
+          'archived'
+        ];
+    }
+
+    match /volunteer_documents/{documentId} {
+      allow read: if signedIn();
+      allow create, update: if isVolunteerAdmin()
+        && validVolunteerDocumentRecord();
+      allow delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 50 — VOLUNTEER POLICIES
+    // ========================================================================
+
+    function validVolunteerPolicyDocument() {
+      return request.resource.data.keys().hasAll([
+          'title',
+          'summary',
+          'url',
+          'version',
+          'effectiveDate',
+          'status',
+          'public'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'title',
+          'summary',
+          'url',
+          'version',
+          'effectiveDate',
+          'status',
+          'public',
+          'createdBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.title, 1, 240)
+        && textAtMost(request.resource.data.summary, 8000)
+        && textAtMost(request.resource.data.url, 1000)
+        && textAtMost(request.resource.data.version, 80)
+        && textAtMost(request.resource.data.effectiveDate, 100)
+        && request.resource.data.status in [
+          'draft',
+          'active',
+          'superseded',
+          'archived'
+        ]
+        && request.resource.data.public is bool;
+    }
+
+    match /volunteer_policies/{policyId} {
+      allow get, list: if resource.data.public == true
+        || signedIn();
+      allow create, update: if isCoreAdmin()
+        && validVolunteerPolicyDocument();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 51 — VOLUNTEER FORMS CATALOG
+    // ========================================================================
+
+    function validVolunteerFormDocument() {
+      return request.resource.data.keys().hasAll([
+          'title',
+          'description',
+          'formType',
+          'url',
+          'audience',
+          'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'title',
+          'description',
+          'formType',
+          'url',
+          'audience',
+          'status',
+          'createdBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.title, 1, 240)
+        && textAtMost(request.resource.data.description, 5000)
+        && textAtMost(request.resource.data.formType, 160)
+        && textAtMost(request.resource.data.url, 1000)
+        && textAtMost(request.resource.data.audience, 200)
+        && request.resource.data.status in [
+          'draft',
+          'active',
+          'closed',
+          'archived'
+        ];
+    }
+
+    match /volunteer_forms/{formId} {
+      allow read: if signedIn();
+      allow create, update: if isVolunteerAdmin()
+        && validVolunteerFormDocument();
+      allow delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 52 — VOLUNTEER CHECKLISTS
+    // ========================================================================
+
+    function validVolunteerChecklistDocument() {
+      return request.resource.data.keys().hasAll([
+          'title',
+          'description',
+          'assignedToUid',
+          'items',
+          'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'title',
+          'description',
+          'assignedToUid',
+          'items',
+          'status',
+          'createdBy',
+          'createdAt',
+          'updatedAt',
+          'completedAt'
+        ])
+        && textBetween(request.resource.data.title, 1, 240)
+        && textAtMost(request.resource.data.description, 5000)
+        && textAtMost(request.resource.data.assignedToUid, 200)
+        && request.resource.data.items is list
+        && request.resource.data.status in [
+          'open',
+          'in progress',
+          'completed',
+          'archived'
+        ];
+    }
+
+    match /volunteer_checklists/{checklistId} {
+      allow get, list: if isTrainer()
+        || (signedIn() && resource.data.assignedToUid == currentUid());
+      allow create, update: if isTrainer()
+        && validVolunteerChecklistDocument();
+      allow delete: if isVolunteerAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 53 — VOLUNTEER INCIDENT REPORTS
+    // ========================================================================
+
+    function validVolunteerIncidentCreate() {
+      return signedIn()
+        && volunteerProfileExists()
+        && verifyFields(
+          [
+            'uid',
+            'type',
+            'summary',
+            'severity',
+            'status',
+            'createdAt',
+            'updatedAt'
+          ],
+          [
+            'chapterId',
+            'relatedVolunteerUid',
+            'location',
+            'occurredAt'
+          ]
+        )
+        && request.resource.data.uid == currentUid()
+        && textBetween(request.resource.data.type, 1, 160)
+        && textBetween(request.resource.data.summary, 1, 10000)
+        && request.resource.data.severity in [
+          'low',
+          'moderate',
+          'high',
+          'critical'
+        ]
+        && request.resource.data.status == 'submitted'
+        && validCreateTimestamps();
+    }
+
+    function validIncidentAdminUpdate() {
+      return isVolunteerAdmin()
+        && changedOnly([
+          'status',
+          'reviewedBy',
+          'reviewedAt',
+          'resolution',
+          'adminNote',
+          'updatedAt'
+        ])
+        && request.resource.data.status in [
+          'submitted',
+          'under review',
+          'resolved',
+          'closed',
+          'archived'
+        ]
+        && (!('resolution' in request.resource.data)
+          || textAtMost(request.resource.data.resolution, 10000))
+        && validUpdatedAt();
+    }
+
+    match /volunteer_incidents/{incidentId} {
+      allow create: if validVolunteerIncidentCreate();
+      allow get, list: if isVolunteerAdmin()
+        || (signedIn() && resource.data.uid == currentUid());
+      allow update: if validIncidentAdminUpdate();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 54 — RESERVED SECURITY-SENSITIVE COLLECTIONS
+    // ========================================================================
+    // These namespaces are reserved now so future features fail closed until
+    // a deliberate partner / staff authentication model is implemented.
+
+    match /bwr_partner_accounts/{documentId} {
+      allow read, write: if isCoreAdmin();
+    }
+
+    match /bwr_partner_agreements/{documentId} {
+      allow read, write: if isCoreAdmin();
+    }
+
+    match /bwr_partner_notes/{documentId} {
+      allow read, write: if isCoreAdmin();
+    }
+
+    match /bwr_financial_ledger/{documentId} {
+      allow read, write: if isCoreAdmin();
+    }
+
+    match /bwr_expenses/{documentId} {
+      allow read, write: if isCoreAdmin();
+    }
+
+    match /bwr_donations/{documentId} {
+      allow read, write: if isCoreAdmin();
+    }
+
+    match /bwr_vendor_records/{documentId} {
+      allow read, write: if isCoreAdmin();
+    }
+
+    match /bwr_distribution_activity/{documentId} {
+      allow read, write: if isCoreAdmin();
+    }
+
+    match /volunteer_private_records/{documentId} {
+      allow read, write: if isCoreAdmin();
+    }
+
+    match /volunteer_discipline/{documentId} {
+      allow read, write: if isCoreAdmin();
+    }
+
+    match /volunteer_account_recovery/{documentId} {
+      allow read, write: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
+    // SECTION 55 — FINAL DEFAULT DENY
+    // ========================================================================
 
     match /{document=**} {
       allow read, write: if false;
