@@ -39,6 +39,40 @@ service cloud.firestore {
     match /volunteer_badges/{badgeId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
     match /chapter_reports/{reportId} { allow create: if signedIn(); allow read, update, delete: if isAdmin(); }
     match /admin_notes/{noteId} { allow read, create, update, delete: if isAdmin(); }
+
+    match /bwr_partner_applications/{applicationId} {
+      allow create: if
+        request.resource.data.keys().hasAll(['organizationName','organizationType','website','city','state','serviceArea','contactName','contactRole','contactEmail','contactPhone','partnershipTypes','organizationSummary','peopleServed','estimatedBibleNeed','distributionExperience','whyPartner','additionalNotes','dignityAcknowledged','stewardshipAcknowledged','reportingAcknowledged','accuracyAcknowledged','status','source','schemaVersion','createdAt','updatedAt']) &&
+        request.resource.data.keys().hasOnly(['organizationName','organizationType','website','city','state','serviceArea','contactName','contactRole','contactEmail','contactPhone','partnershipTypes','organizationSummary','peopleServed','estimatedBibleNeed','distributionExperience','whyPartner','additionalNotes','dignityAcknowledged','stewardshipAcknowledged','reportingAcknowledged','accuracyAcknowledged','status','source','schemaVersion','createdAt','updatedAt']) &&
+        request.resource.data.organizationName is string && request.resource.data.organizationName.size() >= 2 && request.resource.data.organizationName.size() <= 160 &&
+        request.resource.data.organizationType is string && request.resource.data.organizationType.size() >= 2 && request.resource.data.organizationType.size() <= 100 &&
+        request.resource.data.website is string && request.resource.data.website.size() <= 300 &&
+        request.resource.data.city is string && request.resource.data.city.size() >= 1 && request.resource.data.city.size() <= 100 &&
+        request.resource.data.state is string && request.resource.data.state.size() >= 1 && request.resource.data.state.size() <= 100 &&
+        request.resource.data.serviceArea is string && request.resource.data.serviceArea.size() >= 2 && request.resource.data.serviceArea.size() <= 300 &&
+        request.resource.data.contactName is string && request.resource.data.contactName.size() >= 2 && request.resource.data.contactName.size() <= 120 &&
+        request.resource.data.contactRole is string && request.resource.data.contactRole.size() >= 2 && request.resource.data.contactRole.size() <= 120 &&
+        request.resource.data.contactEmail is string && request.resource.data.contactEmail.size() >= 5 && request.resource.data.contactEmail.size() <= 220 &&
+        request.resource.data.contactPhone is string && request.resource.data.contactPhone.size() <= 60 &&
+        request.resource.data.partnershipTypes is list && request.resource.data.partnershipTypes.size() >= 1 && request.resource.data.partnershipTypes.size() <= 7 &&
+        request.resource.data.organizationSummary is string && request.resource.data.organizationSummary.size() >= 10 && request.resource.data.organizationSummary.size() <= 1800 &&
+        request.resource.data.peopleServed is string && request.resource.data.peopleServed.size() >= 10 && request.resource.data.peopleServed.size() <= 1800 &&
+        request.resource.data.estimatedBibleNeed is string && request.resource.data.estimatedBibleNeed.size() <= 100 &&
+        request.resource.data.distributionExperience is string && request.resource.data.distributionExperience.size() <= 600 &&
+        request.resource.data.whyPartner is string && request.resource.data.whyPartner.size() >= 10 && request.resource.data.whyPartner.size() <= 2200 &&
+        request.resource.data.additionalNotes is string && request.resource.data.additionalNotes.size() <= 1800 &&
+        request.resource.data.dignityAcknowledged == true &&
+        request.resource.data.stewardshipAcknowledged == true &&
+        request.resource.data.reportingAcknowledged == true &&
+        request.resource.data.accuracyAcknowledged == true &&
+        request.resource.data.status == 'submitted' &&
+        request.resource.data.source == 'bwr-partners-page' &&
+        request.resource.data.schemaVersion == 1 &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.updatedAt == request.time;
+      allow read, update, delete: if isAdmin();
+    }
+
     match /audit_logs/{logId} { allow read, create: if isAdmin(); allow update, delete: if false; }
     match /settings/{settingId} { allow read: if true; allow create, update, delete: if isAdmin(); }
     match /admins/{adminId} { allow read, write: if ownerEmail() || signedIn(); }
