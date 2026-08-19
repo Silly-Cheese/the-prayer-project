@@ -6,21 +6,32 @@ service cloud.firestore {
     // ========================================================================
     // THE PRAYER PROJECT — CANONICAL CLOUD FIRESTORE SECURITY RULES
     // ========================================================================
+    // Shared by:
+    //   • ask4prayers.com
+    //   • The Prayer Project admin dashboard
+    //   • volunteer.ask4prayers.com
+    //   • Volunteer Network administration / training / chapters / service
+    //   • Bibles Within Reach applications and future operating records
     //
-    // Shared security boundary for ask4prayers.com, the Prayer Project admin
-    // dashboard, volunteer.ask4prayers.com, Volunteer Network operations,
-    // chapters/training/service workflows, and Bibles Within Reach.
+    // SECURITY PRINCIPLES
+    //   1. Authentication proves identity; it does not automatically grant
+    //      administrative power.
+    //   2. Public forms may create only exact, validated schemas.
+    //   3. Volunteers may act only on records tied to their authenticated UID
+    //      and only within their assigned lifecycle / permissions.
+    //   4. Volunteer limited-admin authority is intentionally separate from
+    //      Prayer Project core-admin authority.
+    //   5. Privilege-bearing fields are never self-service.
+    //   6. Audit records are append-only.
+    //   7. Unknown collections are denied by default.
     //
-    // Authentication proves identity only. Authorization is enforced here.
-    // Public writes use explicit schemas. Privilege-bearing fields are locked.
-    // Unknown collections are denied by the final recursive rule.
-    //
-    // Keep synchronized with Silly-Cheese/prayer-project-volunteer.
+    // This is the canonical ruleset. Keep the copy in
+    // Silly-Cheese/prayer-project-volunteer synchronized with this file.
     // ========================================================================
 
 
     // ========================================================================
-    // SECTION 1 — AUTHENTICATION / IDENTITY HELPERS
+    // SECTION 1 — AUTHENTICATION / IDENTITY
     // ========================================================================
 
     function signedIn() {
@@ -33,14 +44,20 @@ service cloud.firestore {
         : '';
     }
 
+    function hasEmailClaim() {
+      return signedIn()
+        && ('email' in request.auth.token)
+        && request.auth.token.email is string;
+    }
+
     function currentEmail() {
-      return signedIn() && request.auth.token.email is string
+      return hasEmailClaim()
         ? request.auth.token.email
         : '';
     }
 
     function isOwner() {
-      return signedIn()
+      return hasEmailClaim()
         && currentEmail() == 'christophershelley257@gmail.com';
     }
 
@@ -77,7 +94,69 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 2 — VOLUNTEER IDENTITY / PERMISSION HELPERS
+    // SECTION 2 — GENERIC VALIDATION HELPERS
+    // ========================================================================
+
+    function verifyFields(requiredFields, optionalFields) {
+      let allowedFields = requiredFields.concat(optionalFields);
+      return request.resource.data.keys().hasAll(requiredFields)
+        && request.resource.data.keys().hasOnly(allowedFields);
+    }
+
+    function textBetween(value, minLength, maxLength) {
+      return value is string
+        && value.size() >= minLength
+        && value.size() <= maxLength;
+    }
+
+    function textAtMost(value, maxLength) {
+      return value is string
+        && value.size() <= maxLength;
+    }
+
+    function nonNegativeInt(value) {
+      return value is int
+        && value >= 0;
+    }
+
+    function positiveInt(value) {
+      return value is int
+        && value > 0;
+    }
+
+    function nonNegativeNumber(value) {
+      return value is number
+        && value >= 0;
+    }
+
+    function validCreatedAt() {
+      return request.resource.data.createdAt == request.time;
+    }
+
+    function validUpdatedAt() {
+      return request.resource.data.updatedAt == request.time;
+    }
+
+    function validCreateTimestamps() {
+      return request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function changedOnly(allowedFields) {
+      return request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
+        .hasOnly(allowedFields);
+    }
+
+    function statusIn(value, allowedStatuses) {
+      return value is string
+        && value in allowedStatuses;
+    }
+
+
+    // ========================================================================
+    // SECTION 3 — VOLUNTEER IDENTITY / PERMISSION MODEL
     // ========================================================================
 
     function volunteerProfileExists() {
@@ -125,20 +204,23 @@ service cloud.firestore {
         || volunteerHasPermission('training:trainer');
     }
 
+    // V2 operations center is intentionally available to verified trainers.
     function canPostVolunteerAnnouncements() {
       return isVolunteerAdmin()
-        || volunteerHasPermission('communications:post');
+        || volunteerHasPermission('communications:post')
+        || volunteerHasPermission('training:trainer');
     }
 
     function canCreateRecognition() {
       return isVolunteerAdmin()
-        || volunteerHasPermission('recognition:create');
+        || volunteerHasPermission('recognition:create')
+        || volunteerHasPermission('training:trainer');
     }
 
     function canViewVolunteerReports() {
       return isVolunteerAdmin()
         || volunteerHasPermission('reports:view')
-        || isTrainer();
+        || volunteerHasPermission('training:trainer');
     }
 
     function volunteerAccountEnabled() {
@@ -196,66 +278,17 @@ service cloud.firestore {
         ]);
     }
 
-
-    // ========================================================================
-    // SECTION 3 — GENERIC SCHEMA / TYPE / TIMESTAMP HELPERS
-    // ========================================================================
-
-    function verifyFields(requiredFields, optionalFields) {
-      let allowedFields = requiredFields.concat(optionalFields);
-      return request.resource.data.keys().hasAll(requiredFields)
-        && request.resource.data.keys().hasOnly(allowedFields);
-    }
-
-    function textBetween(value, minimumLength, maximumLength) {
-      return value is string
-        && value.size() >= minimumLength
-        && value.size() <= maximumLength;
-    }
-
-    function textAtMost(value, maximumLength) {
-      return value is string
-        && value.size() <= maximumLength;
-    }
-
-    function nonNegativeInt(value) {
-      return value is int
-        && value >= 0;
-    }
-
-    function positiveInt(value) {
-      return value is int
-        && value > 0;
-    }
-
-    function validCreatedAt() {
-      return request.resource.data.createdAt == request.time;
-    }
-
-    function validUpdatedAt() {
-      return request.resource.data.updatedAt == request.time;
-    }
-
-    function validCreateTimestamps() {
-      return request.resource.data.createdAt == request.time
-        && request.resource.data.updatedAt == request.time;
-    }
-
-    function changedOnly(allowedFields) {
-      return request.resource.data
-        .diff(resource.data)
-        .affectedKeys()
-        .hasOnly(allowedFields);
-    }
-
-    function statusIsOneOf(value, allowedStatuses) {
-      return value is string
-        && value in allowedStatuses;
+    function targetVolunteerIsPrivileged() {
+      return resource.data.permissions is list
+        && resource.data.permissions.hasAny([
+          'admin:limited',
+          'training:trainer'
+        ]);
     }
 
 
     // ========================================================================
-    // SECTION 4 — VOLUNTEER PROGRAM-OPEN SETTINGS
+    // SECTION 4 — VOLUNTEER PROGRAM-OPEN SETTINGS HELPERS
     // ========================================================================
 
     function volunteerSettingsExist() {
@@ -314,7 +347,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 5 — PUBLIC PRAYER REQUESTS
+    // SECTION 5 — PRAYER REQUESTS
     // ========================================================================
 
     function validPrayerRequestCreate() {
@@ -351,7 +384,6 @@ service cloud.firestore {
         && changedOnly(['prayerCount', 'updatedAt'])
         && request.resource.data.prayerCount is int
         && request.resource.data.prayerCount == resource.data.prayerCount + 1
-        && request.resource.data.prayerCount > resource.data.prayerCount
         && validUpdatedAt();
     }
 
@@ -367,19 +399,17 @@ service cloud.firestore {
     function validPublicAnsweredPrayerUpdate() {
       return resource.data.status == 'approved'
         && resource.data.answered == false
-        && request.resource.data.answered == true
         && changedOnly([
           'answered',
           'answeredAt',
           'answeredTestimony',
           'updatedAt'
         ])
+        && request.resource.data.answered == true
         && request.resource.data.answeredAt == request.time
-        && validUpdatedAt()
-        && (
-          !('answeredTestimony' in request.resource.data)
-          || textAtMost(request.resource.data.answeredTestimony, 500)
-        );
+        && (!('answeredTestimony' in request.resource.data)
+          || textAtMost(request.resource.data.answeredTestimony, 500))
+        && validUpdatedAt();
     }
 
     function validCoreAdminPrayerUpdate() {
@@ -406,14 +436,12 @@ service cloud.firestore {
         && nonNegativeInt(request.resource.data.prayerCount)
         && nonNegativeInt(request.resource.data.reportCount)
         && request.resource.data.answered is bool
-        && statusIsOneOf(
+        && statusIn(
           request.resource.data.status,
           ['approved', 'reported', 'removed', 'pending', 'answered']
         )
-        && (
-          !('answeredTestimony' in request.resource.data)
-          || textAtMost(request.resource.data.answeredTestimony, 2000)
-        )
+        && (!('answeredTestimony' in request.resource.data)
+          || textAtMost(request.resource.data.answeredTestimony, 2000))
         && validUpdatedAt();
     }
 
@@ -421,6 +449,7 @@ service cloud.firestore {
       allow get: if isCoreAdmin()
         || resource.data.status == 'approved';
 
+      // Public wall queries must be constrained to status == "approved".
       allow list: if isCoreAdmin()
         || resource.data.status == 'approved';
 
@@ -436,7 +465,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 6 — PRAYER REPORTS / REPORT BANS
+    // SECTION 6 — PRAYER REPORTS
     // ========================================================================
 
     function reporterIsNotBanned(emailKeyValue) {
@@ -486,10 +515,13 @@ service cloud.firestore {
           'adminNote',
           'updatedAt'
         ])
-        && statusIsOneOf(
-          request.resource.data.status,
-          ['open', 'resolved', 'dismissed']
-        );
+        && request.resource.data.status in [
+          'open',
+          'resolved',
+          'dismissed'
+        ]
+        && (!('adminNote' in request.resource.data)
+          || textAtMost(request.resource.data.adminNote, 5000));
     }
 
     match /reports/{reportId} {
@@ -499,17 +531,45 @@ service cloud.firestore {
       allow delete: if isCoreAdmin();
     }
 
+
+    // ========================================================================
+    // SECTION 7 — REPORT BANS
+    // ========================================================================
+
+    function validReportBanWrite() {
+      return request.resource.data.keys().hasAll([
+          'email',
+          'active'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'email',
+          'active',
+          'reason',
+          'createdAt',
+          'createdBy',
+          'updatedAt',
+          'updatedBy'
+        ])
+        && textBetween(request.resource.data.email, 3, 254)
+        && request.resource.data.active is bool
+        && (!('reason' in request.resource.data)
+          || textAtMost(request.resource.data.reason, 5000));
+    }
+
     match /report_bans/{banId} {
-      // Current public report flow performs an exact-ID check. Listing is
-      // still private, and report creation independently enforces the ban.
+      // The current report form performs an exact-ID lookup before submission.
+      // Collection listing remains private, and report creation separately
+      // checks the ban record server-side in these rules.
       allow get: if true;
       allow list: if isCoreAdmin();
-      allow create, update, delete: if isCoreAdmin();
+      allow create, update: if isCoreAdmin()
+        && validReportBanWrite();
+      allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 7 — MAIN SITE SETTINGS / STATUS
+    // SECTION 8 — MAIN SITE SETTINGS / PUBLIC STATUS
     // ========================================================================
 
     function validSiteSettingsWrite() {
@@ -550,7 +610,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 8 — CORE ADMIN AUTHORIZATION REGISTRY
+    // SECTION 9 — CORE ADMIN AUTHORIZATION REGISTRY
     // ========================================================================
 
     function validAdminRegistryWrite(adminId) {
@@ -588,7 +648,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 9 — VOLUNTEER APPLICATIONS
+    // SECTION 10 — VOLUNTEER APPLICATIONS
     // ========================================================================
 
     function validVolunteerApplicationCreate() {
@@ -644,17 +704,14 @@ service cloud.firestore {
           'adminNote',
           'updatedAt'
         ])
-        && statusIsOneOf(
-          request.resource.data.status,
-          [
-            'submitted',
-            'under review',
-            'accepted',
-            'rejected',
-            'activated',
-            'archived'
-          ]
-        )
+        && request.resource.data.status in [
+          'submitted',
+          'under review',
+          'accepted',
+          'rejected',
+          'activated',
+          'archived'
+        ]
         && (!('temporaryCode' in request.resource.data)
           || textAtMost(request.resource.data.temporaryCode, 120))
         && (!('assignedRole' in request.resource.data)
@@ -663,6 +720,8 @@ service cloud.firestore {
           || textAtMost(request.resource.data.assignedTeam, 200))
         && (!('assignedStatus' in request.resource.data)
           || textAtMost(request.resource.data.assignedStatus, 80))
+        && (!('assignedChapterId' in request.resource.data)
+          || textAtMost(request.resource.data.assignedChapterId, 200))
         && (!('assignedPermissions' in request.resource.data)
           || (
             request.resource.data.assignedPermissions is list
@@ -702,9 +761,14 @@ service cloud.firestore {
           && resource.data.status in ['accepted', 'activated']
         );
 
-      // No broad applicant list access: accepted records can carry one-time
-      // activation material and administrative assignments.
-      allow list: if isVolunteerAdmin();
+      // Legacy activation may query an accepted application after the user is
+      // authenticated. The client query must constrain BOTH email and status.
+      allow list: if isVolunteerAdmin()
+        || (
+          signedIn()
+          && resource.data.email == currentEmail()
+          && resource.data.status == 'accepted'
+        );
 
       allow update: if validVolunteerApplicationAdminUpdate()
         || validLegacyApplicationActivation();
@@ -714,7 +778,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 10 — VOLUNTEER INVITES / ACTIVATION CODES
+    // SECTION 11 — VOLUNTEER INVITES / ONE-TIME ACTIVATION
     // ========================================================================
 
     function validVolunteerInviteShape(inviteId) {
@@ -768,10 +832,12 @@ service cloud.firestore {
         && request.resource.data.permissions is list
         && textAtMost(request.resource.data.chapterId, 200)
         && request.resource.data.used is bool
-        && statusIsOneOf(
-          request.resource.data.status,
-          ['active', 'used', 'revoked', 'expired']
-        )
+        && request.resource.data.status in [
+          'active',
+          'used',
+          'revoked',
+          'expired'
+        ]
         && (
           isCoreAdmin()
           || noPrivilegedVolunteerPermissions(
@@ -796,8 +862,8 @@ service cloud.firestore {
     }
 
     match /volunteer_invites/{inviteId} {
-      // Required by the current pre-auth activation workflow. This is an
-      // exact-document exception; collection listing remains protected.
+      // The current pre-auth activation page must fetch the exact invite in
+      // order to validate its one-time code. Listing remains protected.
       allow get: if true;
       allow list: if isVolunteerAdmin();
 
@@ -818,7 +884,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 11 — VOLUNTEER PROFILES / ACCOUNT LIFECYCLE
+    // SECTION 12 — VOLUNTEER PROFILE / ACCOUNT LIFECYCLE
     // ========================================================================
 
     function activationInviteExists(emailKeyValue) {
@@ -827,13 +893,19 @@ service cloud.firestore {
       );
     }
 
-    function activationInvite(emailKeyValue) {
+    function activationInviteData(emailKeyValue) {
       return get(
         /databases/$(database)/documents/volunteer_invites/$(emailKeyValue)
       ).data;
     }
 
     function validVolunteerProfileCreate(volunteerId) {
+      let emailKeyValue = request.resource.data.emailKey;
+      let hasInvite = activationInviteExists(emailKeyValue);
+      let inviteData = hasInvite
+        ? activationInviteData(emailKeyValue)
+        : {};
+
       return isSelf(volunteerId)
         && verifyFields(
           [
@@ -867,34 +939,24 @@ service cloud.firestore {
         && textAtMost(request.resource.data.chapterId, 200)
         && request.resource.data.agreementAccepted == false
         && request.resource.data.trainingCompleted == false
-        && statusIsOneOf(
-          request.resource.data.activationSource,
-          ['invite', 'old_application']
-        )
+        && request.resource.data.activationSource in [
+          'invite',
+          'old_application'
+        ]
         && validCreateTimestamps()
         && (
           (
-            activationInviteExists(request.resource.data.emailKey)
-            && activationInvite(request.resource.data.emailKey).email
-              == currentEmail()
-            && activationInvite(request.resource.data.emailKey).status
-              == 'active'
-            && activationInvite(request.resource.data.emailKey).used
-              == false
-            && request.resource.data.name
-              == activationInvite(request.resource.data.emailKey).name
-            && request.resource.data.role
-              == activationInvite(request.resource.data.emailKey).role
-            && request.resource.data.team
-              == activationInvite(request.resource.data.emailKey).team
-            && request.resource.data.status
-              == activationInvite(
-                request.resource.data.emailKey
-              ).volunteerStatus
-            && request.resource.data.permissions
-              == activationInvite(request.resource.data.emailKey).permissions
-            && request.resource.data.chapterId
-              == activationInvite(request.resource.data.emailKey).chapterId
+            request.resource.data.activationSource == 'invite'
+            && hasInvite
+            && inviteData.email == currentEmail()
+            && inviteData.status == 'active'
+            && inviteData.used == false
+            && request.resource.data.name == inviteData.name
+            && request.resource.data.role == inviteData.role
+            && request.resource.data.team == inviteData.team
+            && request.resource.data.status == inviteData.volunteerStatus
+            && request.resource.data.permissions == inviteData.permissions
+            && request.resource.data.chapterId == inviteData.chapterId
           )
           || (
             request.resource.data.activationSource == 'old_application'
@@ -966,6 +1028,10 @@ service cloud.firestore {
 
     function validTrainerVolunteerUpdate() {
       return isTrainer()
+        && (
+          isCoreAdmin()
+          || !targetVolunteerIsPrivileged()
+        )
         && changedOnly([
           'trainingCompleted',
           'trainingCompletedAt',
@@ -976,6 +1042,17 @@ service cloud.firestore {
           'updatedAt'
         ])
         && request.resource.data.trainingCompleted is bool
+        && request.resource.data.status in [
+          'Active',
+          'Training',
+          'Orientation',
+          'Probationary',
+          'Limited',
+          'Suspended',
+          'Inactive',
+          'Removed',
+          'Archived'
+        ]
         && (!('trainingReviewStatus' in request.resource.data)
           || textAtMost(request.resource.data.trainingReviewStatus, 80))
         && (!('trainerUid' in request.resource.data)
@@ -1015,7 +1092,17 @@ service cloud.firestore {
         && textBetween(request.resource.data.name, 1, 160)
         && textBetween(request.resource.data.team, 1, 200)
         && textBetween(request.resource.data.role, 1, 160)
-        && textBetween(request.resource.data.status, 1, 80)
+        && request.resource.data.status in [
+          'Active',
+          'Training',
+          'Orientation',
+          'Probationary',
+          'Limited',
+          'Suspended',
+          'Inactive',
+          'Removed',
+          'Archived'
+        ]
         && request.resource.data.permissions is list
         && (
           isCoreAdmin()
@@ -1024,13 +1111,7 @@ service cloud.firestore {
               .diff(resource.data)
               .affectedKeys()
               .hasAny(['permissions'])
-            && !(
-              resource.data.permissions is list
-              && resource.data.permissions.hasAny([
-                'admin:limited',
-                'training:trainer'
-              ])
-            )
+            && !targetVolunteerIsPrivileged()
           )
         )
         && textAtMost(request.resource.data.chapterId, 200)
@@ -1055,7 +1136,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 12 — VOLUNTEER CHAPTER REQUESTS
+    // SECTION 13 — VOLUNTEER CHAPTER REQUESTS
     // ========================================================================
 
     function validChapterRequestCreate() {
@@ -1101,17 +1182,14 @@ service cloud.firestore {
           'adminNote',
           'updatedAt'
         ])
-        && statusIsOneOf(
-          request.resource.data.status,
-          [
-            'submitted',
-            'under review',
-            'approved',
-            'rejected',
-            'withdrawn',
-            'archived'
-          ]
-        )
+        && request.resource.data.status in [
+          'submitted',
+          'under review',
+          'approved',
+          'rejected',
+          'withdrawn',
+          'archived'
+        ]
         && (!('chapterId' in request.resource.data)
           || textAtMost(request.resource.data.chapterId, 200))
         && validUpdatedAt();
@@ -1131,7 +1209,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 13 — ACTIVE VOLUNTEER CHAPTERS
+    // SECTION 14 — ACTIVE VOLUNTEER CHAPTERS
     // ========================================================================
 
     function validVolunteerChapterWrite() {
@@ -1169,10 +1247,13 @@ service cloud.firestore {
         && (!('purpose' in request.resource.data)
           || textAtMost(request.resource.data.purpose, 5000))
         && textAtMost(request.resource.data.chapterId, 200)
-        && statusIsOneOf(
-          request.resource.data.status,
-          ['active', 'paused', 'inactive', 'suspended', 'closed']
-        )
+        && request.resource.data.status in [
+          'active',
+          'paused',
+          'inactive',
+          'suspended',
+          'closed'
+        ]
         && (!('chapterGoal' in request.resource.data)
           || textAtMost(request.resource.data.chapterGoal, 5000))
         && (!('chapterHealth' in request.resource.data)
@@ -1184,19 +1265,43 @@ service cloud.firestore {
           ]);
     }
 
+    function validTrainerChapterHealthUpdate() {
+      return isTrainer()
+        && changedOnly([
+          'chapterGoal',
+          'chapterHealth',
+          'chapterHealthUpdatedAt',
+          'updatedAt'
+        ])
+        && textAtMost(request.resource.data.chapterGoal, 5000)
+        && request.resource.data.chapterHealth in [
+          'Healthy',
+          'Needs Attention',
+          'Inactive Risk',
+          'Paused'
+        ]
+        && request.resource.data.chapterHealthUpdatedAt == request.time
+        && validUpdatedAt();
+    }
+
     match /volunteer_chapters/{chapterId} {
       allow read: if true;
-      allow create, update: if isVolunteerAdmin()
+      allow create: if isVolunteerAdmin()
         && validVolunteerChapterWrite();
+      allow update: if (
+          isVolunteerAdmin()
+          && validVolunteerChapterWrite()
+        )
+        || validTrainerChapterHealthUpdate();
       allow delete: if isVolunteerAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 14 — CHAPTER MEMBERSHIP
+    // SECTION 15 — CHAPTER MEMBERSHIP
     // ========================================================================
 
-    function validSelfChapterMembershipCreate(chapterMemberId) {
+    function validSelfChapterMembershipCreate() {
       return signedIn()
         && volunteerProfileExists()
         && verifyFields(
@@ -1224,16 +1329,16 @@ service cloud.firestore {
           'old_application',
           'activation'
         ]
-        && validUpdatedAt()
         && (!('joinedAt' in request.resource.data)
-          || request.resource.data.joinedAt == request.time);
+          || request.resource.data.joinedAt == request.time)
+        && validUpdatedAt();
     }
 
-    function chapterLeaderMayRead(resourceChapterId) {
+    function chapterLeaderMayRead(chapterIdValue) {
       return signedIn()
         && volunteerHasPermission('chapter:lead')
         && volunteerProfileExists()
-        && currentVolunteer().chapterId == resourceChapterId;
+        && currentVolunteer().chapterId == chapterIdValue;
     }
 
     match /chapter_members/{chapterMemberId} {
@@ -1242,13 +1347,13 @@ service cloud.firestore {
         || (signedIn() && resource.data.uid == currentUid())
         || chapterLeaderMayRead(resource.data.chapterId);
       allow create: if isVolunteerAdmin()
-        || validSelfChapterMembershipCreate(chapterMemberId);
+        || validSelfChapterMembershipCreate();
       allow update, delete: if isVolunteerAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 15 — CHAPTER REPORTS
+    // SECTION 16 — CHAPTER REPORTS
     // ========================================================================
 
     function validChapterReportCreate() {
@@ -1296,7 +1401,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 16 — TRAINING PLANS
+    // SECTION 17 — TRAINING PLANS
     // ========================================================================
 
     function validTrainingPlanWrite(planId) {
@@ -1337,17 +1442,14 @@ service cloud.firestore {
         && textAtMost(request.resource.data.assignedTrainerUid, 160)
         && textAtMost(request.resource.data.assignedTrainerEmail, 254)
         && textAtMost(request.resource.data.assignedTrainerName, 160)
-        && statusIsOneOf(
-          request.resource.data.status,
-          [
-            'Assigned',
-            'In Progress',
-            'Needs Review',
-            'Completed',
-            'Paused',
-            'Returned'
-          ]
-        )
+        && request.resource.data.status in [
+          'Assigned',
+          'In Progress',
+          'Needs Review',
+          'Completed',
+          'Paused',
+          'Returned'
+        ]
         && request.resource.data.sections is list
         && textAtMost(request.resource.data.notes, 8000)
         && nonNegativeInt(request.resource.data.requiredCount)
@@ -1358,28 +1460,36 @@ service cloud.firestore {
         && validUpdatedAt();
     }
 
-    function trainerMayWritePlan(planId) {
+    function trainerMayCreatePlan(planId) {
       return isTrainer()
+        && validTrainingPlanWrite(planId)
         && (
           isVolunteerAdmin()
-          || !('assignedTrainerUid' in resource.data)
-          || resource.data.assignedTrainerUid == currentUid()
           || request.resource.data.assignedTrainerUid == currentUid()
-        )
-        && validTrainingPlanWrite(planId);
+        );
+    }
+
+    function trainerMayUpdatePlan(planId) {
+      return isTrainer()
+        && validTrainingPlanWrite(planId)
+        && (
+          isVolunteerAdmin()
+          || resource.data.assignedTrainerUid == currentUid()
+        );
     }
 
     match /volunteer_training_plans/{planId} {
       allow get: if isSelf(planId)
         || isTrainer();
       allow list: if isTrainer();
-      allow create, update: if trainerMayWritePlan(planId);
+      allow create: if trainerMayCreatePlan(planId);
+      allow update: if trainerMayUpdatePlan(planId);
       allow delete: if isVolunteerAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 17 — TRAINING COMPLETIONS / TRAINER REVIEW
+    // SECTION 18 — TRAINING COMPLETIONS / REVIEW QUEUE
     // ========================================================================
 
     function validTrainingCompletionCreate() {
@@ -1427,17 +1537,14 @@ service cloud.firestore {
           'reviewedAt',
           'updatedAt'
         ])
-        && statusIsOneOf(
-          request.resource.data.status,
-          [
-            'submitted',
-            'Submitted',
-            'Needs Review',
-            'Approved',
-            'Returned',
-            'Rejected'
-          ]
-        )
+        && request.resource.data.status in [
+          'submitted',
+          'Submitted',
+          'Needs Review',
+          'Approved',
+          'Returned',
+          'Rejected'
+        ]
         && (!('trainerNote' in request.resource.data)
           || textAtMost(request.resource.data.trainerNote, 8000))
         && (!('reviewedAt' in request.resource.data)
@@ -1456,7 +1563,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 18 — VOLUNTEER ACTIVITY UPDATES
+    // SECTION 19 — VOLUNTEER ACTIVITY UPDATES
     // ========================================================================
 
     function validVolunteerActivityCreate() {
@@ -1498,7 +1605,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 19 — VOLUNTEER SERVICE LOGS
+    // SECTION 20 — VOLUNTEER SERVICE LOGS
     // ========================================================================
 
     function validVolunteerServiceLogCreate() {
@@ -1539,7 +1646,10 @@ service cloud.firestore {
         && request.resource.data.minutes <= 10080
         && textBetween(request.resource.data.type, 1, 160)
         && textBetween(request.resource.data.summary, 1, 8000)
-        && request.resource.data.status in ['submitted', 'Pending Review']
+        && request.resource.data.status in [
+          'submitted',
+          'Pending Review'
+        ]
         && (!('approvalStatus' in request.resource.data)
           || request.resource.data.approvalStatus == 'Pending')
         && validCreatedAt()
@@ -1590,7 +1700,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 20 — CARE / OUTREACH PROJECTS
+    // SECTION 21 — CARE / OUTREACH PROJECTS
     // ========================================================================
 
     function validVolunteerCareProjectCreate() {
@@ -1655,10 +1765,10 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 21 — ASSIGNMENTS / TASKS
+    // SECTION 22 — VOLUNTEER ASSIGNMENTS / TASKS
     // ========================================================================
 
-    function validAssignmentWrite() {
+    function validAssignmentDocument() {
       return request.resource.data.keys().hasAll([
           'title',
           'description',
@@ -1732,13 +1842,13 @@ service cloud.firestore {
 
     match /volunteer_assignments/{assignmentId} {
       allow create: if isTrainer()
-        && validAssignmentWrite()
+        && validAssignmentDocument()
         && validCreateTimestamps();
       allow get, list: if isTrainer()
         || (signedIn() && resource.data.assignedToUid == currentUid());
       allow update: if (
           isTrainer()
-          && validAssignmentWrite()
+          && validAssignmentDocument()
           && validUpdatedAt()
         )
         || validVolunteerAssignmentCompletion();
@@ -1747,7 +1857,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 22 — VOLUNTEER CONTACT / LEADERSHIP MESSAGES
+    // SECTION 23 — VOLUNTEER CONTACT / LEADERSHIP MESSAGES
     // ========================================================================
 
     function validVolunteerContactCreate() {
@@ -1789,8 +1899,8 @@ service cloud.firestore {
           || validUpdatedAt());
     }
 
-    function validVolunteerContactAdminUpdate() {
-      return isVolunteerAdmin()
+    function validVolunteerContactLeadershipUpdate() {
+      return isTrainer()
         && changedOnly([
           'status',
           'closedBy',
@@ -1798,7 +1908,11 @@ service cloud.firestore {
           'adminNote',
           'updatedAt'
         ])
-        && request.resource.data.status in ['open', 'in review', 'closed']
+        && request.resource.data.status in [
+          'open',
+          'in review',
+          'closed'
+        ]
         && (!('closedAt' in request.resource.data)
           || request.resource.data.closedAt == request.time)
         && validUpdatedAt();
@@ -1806,15 +1920,15 @@ service cloud.firestore {
 
     match /volunteer_contacts/{contactId} {
       allow create: if validVolunteerContactCreate();
-      allow get, list: if isVolunteerAdmin()
+      allow get, list: if isTrainer()
         || (signedIn() && resource.data.uid == currentUid());
-      allow update: if validVolunteerContactAdminUpdate();
+      allow update: if validVolunteerContactLeadershipUpdate();
       allow delete: if isVolunteerAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 23 — VOLUNTEER LEAVE REQUESTS
+    // SECTION 24 — VOLUNTEER LEAVE REQUESTS
     // ========================================================================
 
     function validVolunteerLeaveCreate() {
@@ -1875,7 +1989,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 24 — VOLUNTEER SUGGESTIONS
+    // SECTION 25 — VOLUNTEER SUGGESTIONS
     // ========================================================================
 
     function validVolunteerSuggestionCreate() {
@@ -1933,10 +2047,10 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 25 — PERFORMANCE REVIEWS
+    // SECTION 26 — PERFORMANCE REVIEWS
     // ========================================================================
 
-    function validPerformanceReviewWrite() {
+    function validPerformanceReviewDocument() {
       return verifyFields(
           [
             'uid',
@@ -1969,20 +2083,20 @@ service cloud.firestore {
       allow get, list: if canCreatePerformanceReview()
         || (signedIn() && resource.data.uid == currentUid());
       allow create: if canCreatePerformanceReview()
-        && validPerformanceReviewWrite()
+        && validPerformanceReviewDocument()
         && validCreateTimestamps();
       allow update: if canCreatePerformanceReview()
-        && validPerformanceReviewWrite()
+        && validPerformanceReviewDocument()
         && validUpdatedAt();
       allow delete: if isVolunteerAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 26 — VOLUNTEER ANNOUNCEMENTS
+    // SECTION 27 — VOLUNTEER ANNOUNCEMENTS
     // ========================================================================
 
-    function validVolunteerAnnouncementWrite() {
+    function validVolunteerAnnouncementDocument() {
       return verifyFields(
           [
             'title',
@@ -2011,20 +2125,20 @@ service cloud.firestore {
     match /volunteer_announcements/{announcementId} {
       allow read: if signedIn();
       allow create: if canPostVolunteerAnnouncements()
-        && validVolunteerAnnouncementWrite()
+        && validVolunteerAnnouncementDocument()
         && validCreateTimestamps();
       allow update: if canPostVolunteerAnnouncements()
-        && validVolunteerAnnouncementWrite()
+        && validVolunteerAnnouncementDocument()
         && validUpdatedAt();
       allow delete: if canPostVolunteerAnnouncements();
     }
 
 
     // ========================================================================
-    // SECTION 27 — VOLUNTEER BADGES / RECOGNITION
+    // SECTION 28 — VOLUNTEER BADGES / RECOGNITION
     // ========================================================================
 
-    function validVolunteerBadgeWrite() {
+    function validVolunteerBadgeDocument() {
       return verifyFields(
           [
             'uid',
@@ -2056,17 +2170,17 @@ service cloud.firestore {
       allow get, list: if canCreateRecognition()
         || (signedIn() && resource.data.uid == currentUid());
       allow create: if canCreateRecognition()
-        && validVolunteerBadgeWrite()
+        && validVolunteerBadgeDocument()
         && validCreateTimestamps();
       allow update: if canCreateRecognition()
-        && validVolunteerBadgeWrite()
+        && validVolunteerBadgeDocument()
         && validUpdatedAt();
       allow delete: if canCreateRecognition();
     }
 
 
     // ========================================================================
-    // SECTION 28 — VOLUNTEER PROGRAM SETTINGS
+    // SECTION 29 — VOLUNTEER PROGRAM SETTINGS
     // ========================================================================
 
     function validVolunteerProgramSettings() {
@@ -2094,7 +2208,9 @@ service cloud.firestore {
         && (!('defaultTrainerEmail' in request.resource.data)
           || textAtMost(request.resource.data.defaultTrainerEmail, 254))
         && (!('portalNotice' in request.resource.data)
-          || textAtMost(request.resource.data.portalNotice, 5000));
+          || textAtMost(request.resource.data.portalNotice, 5000))
+        && (!('updatedAt' in request.resource.data)
+          || validUpdatedAt());
     }
 
     match /volunteer_settings/{settingId} {
@@ -2106,25 +2222,67 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 29 — VOLUNTEER NOTES
+    // SECTION 30 — VOLUNTEER NOTES
     // ========================================================================
+
+    function validVolunteerNoteDocument() {
+      return request.resource.data.keys().hasAll(['note'])
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'requestId',
+          'note',
+          'category',
+          'createdBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && textBetween(request.resource.data.note, 1, 10000)
+        && (!('category' in request.resource.data)
+          || textAtMost(request.resource.data.category, 160));
+    }
 
     match /volunteer_notes/{noteId} {
-      allow read, create, update, delete: if isVolunteerAdmin();
+      allow read: if isVolunteerAdmin();
+      allow create, update: if isVolunteerAdmin()
+        && validVolunteerNoteDocument();
+      allow delete: if isVolunteerAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 30 — CORE ADMIN NOTES
+    // SECTION 31 — CORE ADMIN NOTES
     // ========================================================================
+
+    function validCoreAdminNoteCreate() {
+      return verifyFields(
+          ['requestId', 'note', 'adminEmail', 'createdAt'],
+          []
+        )
+        && textBetween(request.resource.data.requestId, 1, 300)
+        && textBetween(request.resource.data.note, 1, 10000)
+        && textAtMost(request.resource.data.adminEmail, 254)
+        && validCreatedAt();
+    }
+
+    function validCoreAdminNoteUpdate() {
+      return changedOnly(['note', 'editedAt', 'editedBy'])
+        && textBetween(request.resource.data.note, 1, 10000)
+        && (!('editedBy' in request.resource.data)
+          || textAtMost(request.resource.data.editedBy, 254));
+    }
 
     match /admin_notes/{noteId} {
-      allow read, create, update, delete: if isCoreAdmin();
+      allow get, list: if isCoreAdmin();
+      allow create: if isCoreAdmin()
+        && validCoreAdminNoteCreate();
+      allow update: if isCoreAdmin()
+        && validCoreAdminNoteUpdate();
+      allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 31 — BIBLES WITHIN REACH PARTNERSHIP APPLICATIONS
+    // SECTION 32 — BIBLES WITHIN REACH PARTNERSHIP APPLICATIONS
     // ========================================================================
 
     function validBwrPartnerApplicationCreate() {
@@ -2219,10 +2377,10 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 32 — BWR APPROVED PARTNER RECORDS
+    // SECTION 33 — BWR APPROVED PARTNERS
     // ========================================================================
 
-    function validBwrPartnerRecordWrite() {
+    function validBwrPartnerDocument() {
       return request.resource.data.keys().hasAll([
           'partnerId',
           'organizationName',
@@ -2277,16 +2435,16 @@ service cloud.firestore {
     match /bwr_partners/{partnerId} {
       allow read: if isCoreAdmin();
       allow create, update: if isCoreAdmin()
-        && validBwrPartnerRecordWrite();
+        && validBwrPartnerDocument();
       allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 33 — BWR BIBLE REQUESTS
+    // SECTION 34 — BWR BIBLE REQUESTS
     // ========================================================================
 
-    function validBwrBibleRequestWrite() {
+    function validBwrBibleRequestDocument() {
       return request.resource.data.keys().hasAll([
           'partnerId',
           'requestedQuantity',
@@ -2326,19 +2484,19 @@ service cloud.firestore {
           || nonNegativeInt(request.resource.data.reviewedQuantity));
     }
 
-    match /bwr_bible_requests/{requestId} {
+    match /bwr_bible_requests/{bibleRequestId} {
       allow read: if isCoreAdmin();
       allow create, update: if isCoreAdmin()
-        && validBwrBibleRequestWrite();
+        && validBwrBibleRequestDocument();
       allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 34 — BWR DISTRIBUTION REPORTS
+    // SECTION 35 — BWR DISTRIBUTION REPORTS
     // ========================================================================
 
-    function validBwrDistributionReportWrite() {
+    function validBwrDistributionReportDocument() {
       return request.resource.data.keys().hasAll([
           'partnerId',
           'biblesReceived',
@@ -2384,19 +2542,19 @@ service cloud.firestore {
           || textAtMost(request.resource.data.notes, 10000));
     }
 
-    match /bwr_distribution_reports/{reportId} {
+    match /bwr_distribution_reports/{distributionReportId} {
       allow read: if isCoreAdmin();
       allow create, update: if isCoreAdmin()
-        && validBwrDistributionReportWrite();
+        && validBwrDistributionReportDocument();
       allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 35 — BWR BIBLE TRANSFERS
+    // SECTION 36 — BWR BIBLE TRANSFERS
     // ========================================================================
 
-    function validBwrBibleTransferWrite() {
+    function validBwrBibleTransferDocument() {
       return request.resource.data.keys().hasAll([
           'transferId',
           'partnerId',
@@ -2435,16 +2593,16 @@ service cloud.firestore {
     match /bwr_bible_transfers/{transferId} {
       allow read: if isCoreAdmin();
       allow create, update: if isCoreAdmin()
-        && validBwrBibleTransferWrite();
+        && validBwrBibleTransferDocument();
       allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 36 — BWR INVENTORY
+    // SECTION 37 — BWR INVENTORY
     // ========================================================================
 
-    function validBwrInventoryWrite() {
+    function validBwrInventoryDocument() {
       return request.resource.data.keys().hasAll([
           'inventoryItemId',
           'quantityReceived',
@@ -2482,8 +2640,7 @@ service cloud.firestore {
         && nonNegativeInt(request.resource.data.quantityReserved)
         && nonNegativeInt(request.resource.data.quantityTransferred)
         && nonNegativeInt(request.resource.data.quantityDistributedDirect)
-        && request.resource.data.unitCost is number
-        && request.resource.data.unitCost >= 0
+        && nonNegativeNumber(request.resource.data.unitCost)
         && request.resource.data.status in [
           'planned',
           'ordered',
@@ -2497,36 +2654,29 @@ service cloud.firestore {
     match /bwr_inventory/{inventoryId} {
       allow read: if isCoreAdmin();
       allow create, update: if isCoreAdmin()
-        && validBwrInventoryWrite();
+        && validBwrInventoryDocument();
       allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 37 — BWR INVENTORY ADJUSTMENTS
+    // SECTION 38 — BWR INVENTORY ADJUSTMENTS (APPEND ONLY)
     // ========================================================================
 
-    function validBwrInventoryAdjustmentWrite() {
-      return request.resource.data.keys().hasAll([
-          'inventoryItemId',
-          'adjustmentType',
-          'quantity',
-          'reason',
-          'previousQuantity',
-          'newQuantity',
-          'authorizedBy',
-          'createdAt'
-        ])
-        && request.resource.data.keys().hasOnly([
-          'inventoryItemId',
-          'adjustmentType',
-          'quantity',
-          'reason',
-          'previousQuantity',
-          'newQuantity',
-          'authorizedBy',
-          'createdAt'
-        ])
+    function validBwrInventoryAdjustmentCreate() {
+      return verifyFields(
+          [
+            'inventoryItemId',
+            'adjustmentType',
+            'quantity',
+            'reason',
+            'previousQuantity',
+            'newQuantity',
+            'authorizedBy',
+            'createdAt'
+          ],
+          []
+        )
         && textBetween(request.resource.data.inventoryItemId, 1, 120)
         && request.resource.data.adjustmentType in [
           'increase',
@@ -2540,22 +2690,23 @@ service cloud.firestore {
         && textBetween(request.resource.data.reason, 1, 5000)
         && nonNegativeInt(request.resource.data.previousQuantity)
         && nonNegativeInt(request.resource.data.newQuantity)
+        && textAtMost(request.resource.data.authorizedBy, 254)
         && validCreatedAt();
     }
 
     match /bwr_inventory_adjustments/{adjustmentId} {
       allow get, list: if isCoreAdmin();
       allow create: if isCoreAdmin()
-        && validBwrInventoryAdjustmentWrite();
+        && validBwrInventoryAdjustmentCreate();
       allow update, delete: if false;
     }
 
 
     // ========================================================================
-    // SECTION 38 — BWR PURCHASE ORDERS
+    // SECTION 39 — BWR PURCHASE ORDERS
     // ========================================================================
 
-    function validBwrPurchaseOrderWrite() {
+    function validBwrPurchaseOrderDocument() {
       return request.resource.data.keys().hasAll([
           'purchaseOrderId',
           'vendor',
@@ -2589,14 +2740,10 @@ service cloud.firestore {
         && textBetween(request.resource.data.purchaseOrderId, 1, 120)
         && textBetween(request.resource.data.vendor, 1, 200)
         && positiveInt(request.resource.data.quantity)
-        && request.resource.data.unitPrice is number
-        && request.resource.data.unitPrice >= 0
-        && request.resource.data.subtotal is number
-        && request.resource.data.subtotal >= 0
-        && request.resource.data.shipping is number
-        && request.resource.data.shipping >= 0
-        && request.resource.data.total is number
-        && request.resource.data.total >= 0
+        && nonNegativeNumber(request.resource.data.unitPrice)
+        && nonNegativeNumber(request.resource.data.subtotal)
+        && nonNegativeNumber(request.resource.data.shipping)
+        && nonNegativeNumber(request.resource.data.total)
         && request.resource.data.status in [
           'draft',
           'approved',
@@ -2611,16 +2758,16 @@ service cloud.firestore {
     match /bwr_purchase_orders/{purchaseOrderId} {
       allow read: if isCoreAdmin();
       allow create, update: if isCoreAdmin()
-        && validBwrPurchaseOrderWrite();
+        && validBwrPurchaseOrderDocument();
       allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 39 — BWR RECEIVING REPORTS
+    // SECTION 40 — BWR RECEIVING REPORTS
     // ========================================================================
 
-    function validBwrReceivingReportWrite() {
+    function validBwrReceivingReportDocument() {
       return request.resource.data.keys().hasAll([
           'purchaseOrderId',
           'quantityExpected',
@@ -2661,16 +2808,16 @@ service cloud.firestore {
     match /bwr_receiving_reports/{receivingReportId} {
       allow read: if isCoreAdmin();
       allow create, update: if isCoreAdmin()
-        && validBwrReceivingReportWrite();
+        && validBwrReceivingReportDocument();
       allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 40 — BWR DISTRIBUTION EVENTS
+    // SECTION 41 — BWR DISTRIBUTION EVENTS
     // ========================================================================
 
-    function validBwrDistributionEventWrite() {
+    function validBwrDistributionEventDocument() {
       return request.resource.data.keys().hasAll([
           'eventId',
           'title',
@@ -2716,13 +2863,13 @@ service cloud.firestore {
     match /bwr_distribution_events/{eventId} {
       allow read: if isCoreAdmin();
       allow create, update: if isCoreAdmin()
-        && validBwrDistributionEventWrite();
+        && validBwrDistributionEventDocument();
       allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 41 — AUDIT LOGS (APPEND ONLY)
+    // SECTION 42 — AUDIT LOGS (APPEND ONLY)
     // ========================================================================
 
     function trustedAuditWriter() {
@@ -2737,7 +2884,10 @@ service cloud.firestore {
 
     function validAuditLogCreate() {
       return trustedAuditWriter()
-        && request.resource.data.keys().hasAll(['action', 'createdAt'])
+        && request.resource.data.keys().hasAll([
+          'action',
+          'createdAt'
+        ])
         && request.resource.data.keys().hasOnly([
           'action',
           'requestId',
@@ -2760,6 +2910,10 @@ service cloud.firestore {
           || request.resource.data.details is map)
         && (!('actor' in request.resource.data)
           || textAtMost(request.resource.data.actor, 254))
+        && (!('targetUid' in request.resource.data)
+          || textAtMost(request.resource.data.targetUid, 200))
+        && (!('targetId' in request.resource.data)
+          || textAtMost(request.resource.data.targetId, 300))
         && validCreatedAt();
     }
 
@@ -2772,10 +2926,10 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 42 — VOLUNTEER PROGRAM STATUS
+    // SECTION 43 — VOLUNTEER PROGRAM STATUS
     // ========================================================================
 
-    function validVolunteerProgramStatusWrite() {
+    function validVolunteerProgramStatusDocument() {
       return request.resource.data.keys().hasAll([
           'label',
           'status',
@@ -2800,16 +2954,16 @@ service cloud.firestore {
     match /volunteer_program_status/{statusId} {
       allow read: if true;
       allow create, update: if isVolunteerAdmin()
-        && validVolunteerProgramStatusWrite();
+        && validVolunteerProgramStatusDocument();
       allow delete: if isVolunteerAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 43 — VOLUNTEER PERMISSION CATALOG
+    // SECTION 44 — VOLUNTEER PERMISSION CATALOG
     // ========================================================================
 
-    function validVolunteerPermissionCatalogWrite() {
+    function validPermissionCatalogDocument() {
       return request.resource.data.keys().hasAll([
           'id',
           'label',
@@ -2837,16 +2991,16 @@ service cloud.firestore {
     match /volunteer_permissions/{permissionId} {
       allow read: if signedIn();
       allow create, update: if isCoreAdmin()
-        && validVolunteerPermissionCatalogWrite();
+        && validPermissionCatalogDocument();
       allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 44 — VOLUNTEER ROLE CATALOG
+    // SECTION 45 — VOLUNTEER ROLE CATALOG
     // ========================================================================
 
-    function validVolunteerRoleWrite() {
+    function validVolunteerRoleDocument() {
       return request.resource.data.keys().hasAll([
           'roleId',
           'name',
@@ -2877,16 +3031,16 @@ service cloud.firestore {
     match /volunteer_roles/{roleId} {
       allow read: if signedIn();
       allow create, update: if isCoreAdmin()
-        && validVolunteerRoleWrite();
+        && validVolunteerRoleDocument();
       allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 45 — VOLUNTEER TEAM CATALOG
+    // SECTION 46 — VOLUNTEER TEAM CATALOG
     // ========================================================================
 
-    function validVolunteerTeamWrite() {
+    function validVolunteerTeamDocument() {
       return request.resource.data.keys().hasAll([
           'teamId',
           'name',
@@ -2917,16 +3071,16 @@ service cloud.firestore {
     match /volunteer_teams/{teamId} {
       allow read: if signedIn();
       allow create, update: if isCoreAdmin()
-        && validVolunteerTeamWrite();
+        && validVolunteerTeamDocument();
       allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 46 — VOLUNTEER EVENTS
+    // SECTION 47 — VOLUNTEER EVENTS
     // ========================================================================
 
-    function validVolunteerEventWrite() {
+    function validVolunteerEventDocument() {
       return request.resource.data.keys().hasAll([
           'title',
           'description',
@@ -2964,16 +3118,16 @@ service cloud.firestore {
     match /volunteer_events/{eventId} {
       allow read: if signedIn();
       allow create, update: if canPostVolunteerAnnouncements()
-        && validVolunteerEventWrite();
+        && validVolunteerEventDocument();
       allow delete: if isVolunteerAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 47 — VOLUNTEER RESOURCES
+    // SECTION 48 — VOLUNTEER RESOURCES
     // ========================================================================
 
-    function validVolunteerResourceWrite() {
+    function validVolunteerResourceDocument() {
       return request.resource.data.keys().hasAll([
           'title',
           'description',
@@ -2997,23 +3151,28 @@ service cloud.firestore {
         && textAtMost(request.resource.data.description, 5000)
         && textAtMost(request.resource.data.url, 1000)
         && textAtMost(request.resource.data.type, 120)
-        && request.resource.data.status in ['draft', 'published', 'archived']
+        && request.resource.data.status in [
+          'draft',
+          'published',
+          'archived'
+        ]
         && request.resource.data.public is bool;
     }
 
     match /volunteer_resources/{resourceId} {
-      allow read: if true;
+      allow get, list: if resource.data.public == true
+        || signedIn();
       allow create, update: if isVolunteerAdmin()
-        && validVolunteerResourceWrite();
+        && validVolunteerResourceDocument();
       allow delete: if isVolunteerAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 48 — VOLUNTEER DOCUMENT LINKS
+    // SECTION 49 — VOLUNTEER DOCUMENT LINKS
     // ========================================================================
 
-    function validVolunteerDocumentWrite() {
+    function validVolunteerDocumentRecord() {
       return request.resource.data.keys().hasAll([
           'title',
           'description',
@@ -3038,22 +3197,26 @@ service cloud.firestore {
         && textBetween(request.resource.data.url, 1, 1000)
         && textAtMost(request.resource.data.documentType, 160)
         && textAtMost(request.resource.data.audience, 200)
-        && request.resource.data.status in ['draft', 'active', 'archived'];
+        && request.resource.data.status in [
+          'draft',
+          'active',
+          'archived'
+        ];
     }
 
     match /volunteer_documents/{documentId} {
       allow read: if signedIn();
       allow create, update: if isVolunteerAdmin()
-        && validVolunteerDocumentWrite();
+        && validVolunteerDocumentRecord();
       allow delete: if isVolunteerAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 49 — VOLUNTEER POLICIES
+    // SECTION 50 — VOLUNTEER POLICIES
     // ========================================================================
 
-    function validVolunteerPolicyWrite() {
+    function validVolunteerPolicyDocument() {
       return request.resource.data.keys().hasAll([
           'title',
           'summary',
@@ -3090,18 +3253,19 @@ service cloud.firestore {
     }
 
     match /volunteer_policies/{policyId} {
-      allow read: if true;
+      allow get, list: if resource.data.public == true
+        || signedIn();
       allow create, update: if isCoreAdmin()
-        && validVolunteerPolicyWrite();
+        && validVolunteerPolicyDocument();
       allow delete: if isCoreAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 50 — VOLUNTEER FORMS CATALOG
+    // SECTION 51 — VOLUNTEER FORMS CATALOG
     // ========================================================================
 
-    function validVolunteerFormWrite() {
+    function validVolunteerFormDocument() {
       return request.resource.data.keys().hasAll([
           'title',
           'description',
@@ -3137,16 +3301,16 @@ service cloud.firestore {
     match /volunteer_forms/{formId} {
       allow read: if signedIn();
       allow create, update: if isVolunteerAdmin()
-        && validVolunteerFormWrite();
+        && validVolunteerFormDocument();
       allow delete: if isVolunteerAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 51 — VOLUNTEER CHECKLISTS
+    // SECTION 52 — VOLUNTEER CHECKLISTS
     // ========================================================================
 
-    function validVolunteerChecklistWrite() {
+    function validVolunteerChecklistDocument() {
       return request.resource.data.keys().hasAll([
           'title',
           'description',
@@ -3181,13 +3345,13 @@ service cloud.firestore {
       allow get, list: if isTrainer()
         || (signedIn() && resource.data.assignedToUid == currentUid());
       allow create, update: if isTrainer()
-        && validVolunteerChecklistWrite();
+        && validVolunteerChecklistDocument();
       allow delete: if isVolunteerAdmin();
     }
 
 
     // ========================================================================
-    // SECTION 52 — VOLUNTEER INCIDENT REPORTS
+    // SECTION 53 — VOLUNTEER INCIDENT REPORTS
     // ========================================================================
 
     function validVolunteerIncidentCreate() {
@@ -3255,8 +3419,10 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 53 — RESERVED / SECURITY-SENSITIVE FUTURE COLLECTIONS
+    // SECTION 54 — RESERVED SECURITY-SENSITIVE COLLECTIONS
     // ========================================================================
+    // These namespaces are reserved now so future features fail closed until
+    // a deliberate partner / staff authentication model is implemented.
 
     match /bwr_partner_accounts/{documentId} {
       allow read, write: if isCoreAdmin();
@@ -3304,7 +3470,7 @@ service cloud.firestore {
 
 
     // ========================================================================
-    // SECTION 54 — FINAL DEFAULT DENY
+    // SECTION 55 — FINAL DEFAULT DENY
     // ========================================================================
 
     match /{document=**} {
