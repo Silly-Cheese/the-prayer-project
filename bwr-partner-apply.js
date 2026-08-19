@@ -53,7 +53,8 @@ form?.addEventListener('submit',async event=>{
     status.scrollIntoView({behavior:'smooth',block:'center'});
   }catch(error){
     console.error(error);
-    showError('Your application could not be submitted. Please check your connection and try again.');
+    const permissionIssue=String(error?.code||'').includes('permission-denied');
+    showError(permissionIssue?'Online partnership applications are temporarily finishing activation. Please email pray@ask4prayers.com with the subject “Bibles Within Reach Partnership Interest” if you need to apply right now.':'Your application could not be submitted. Please check your connection and try again.');
   }finally{submit.disabled=false;submit.textContent='Submit Partnership Application';}
 });
 
