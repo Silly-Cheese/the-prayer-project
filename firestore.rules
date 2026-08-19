@@ -176,9 +176,13 @@ service cloud.firestore {
     }
 
     match /report_bans/{banId} {
-      // Ban records can contain moderation details and are never public.
-      // Public report submission is blocked with reporterNotBanned().
-      allow read, create, update, delete: if isAdmin();
+      // Legacy prayer-wall code performs an exact-ID lookup before submitting
+      // a report. Exact gets remain public for compatibility; collection
+      // listing and all writes remain admin-only. The report-create rule also
+      // enforces the ban server-side so this lookup is not the security barrier.
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     // ============================================================
