@@ -2,80 +2,629 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
-    function ownerEmail() { return signedIn() && request.auth.token.email == 'christophershelley257@gmail.com'; }
-    function isAdmin() { return signedIn(); }
-    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
+
+    // ============================================================
+    // AUTHORIZATION HELPERS
+    // ============================================================
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner() {
+      return signedIn()
+        && request.auth.token.email == 'christophershelley257@gmail.com';
+    }
+
+    function hasActiveAdminRecord() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
+    }
+
+    function isAdmin() {
+      return isOwner() || hasActiveAdminRecord();
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // ============================================================
+    // GENERIC VALIDATION HELPERS
+    // ============================================================
+
+    function verifyFields(required, optional) {
+      let allowed = required.concat(optional);
+      return request.resource.data.keys().hasAll(required)
+        && request.resource.data.keys().hasOnly(allowed);
+    }
+
+    function textBetween(value, min, max) {
+      return value is string
+        && value.size() >= min
+        && value.size() <= max;
+    }
+
+    function textAtMost(value, max) {
+      return value is string && value.size() <= max;
+    }
+
+    function freshCreateTimestamps() {
+      return request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function freshUpdateTimestamp() {
+      return request.resource.data.updatedAt == request.time;
+    }
+
+    function reporterNotBanned(emailKey) {
+      return !exists(/databases/$(database)/documents/report_bans/$(emailKey))
+        || get(/databases/$(database)/documents/report_bans/$(emailKey)).data.active == false;
+    }
+
+    // ============================================================
+    // PUBLIC PRAYER WALL
+    // ============================================================
+
+    function validPrayerCreate() {
+      return verifyFields(
+          [
+            'title',
+            'category',
+            'message',
+            'email',
+            'urgent',
+            'prayerCount',
+            'reportCount',
+            'answered',
+            'status',
+            'createdAt',
+            'updatedAt'
+          ],
+          []
+        )
+        && textBetween(request.resource.data.title, 1, 90)
+        && textBetween(request.resource.data.category, 1, 40)
+        && textBetween(request.resource.data.message, 1, 700)
+        && textBetween(request.resource.data.email, 3, 254)
+        && request.resource.data.urgent is bool
+        && request.resource.data.prayerCount == 0
+        && request.resource.data.reportCount == 0
+        && request.resource.data.answered == false
+        && request.resource.data.status == 'approved'
+        && freshCreateTimestamps();
+    }
+
+    function validPublicPrayerIncrement() {
+      return resource.data.status == 'approved'
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['prayerCount', 'updatedAt'])
+        && request.resource.data.prayerCount is int
+        && request.resource.data.prayerCount == resource.data.prayerCount + 1
+        && request.resource.data.prayerCount >= 1
+        && freshUpdateTimestamp();
+    }
+
+    function validPublicReportTransition() {
+      return resource.data.status == 'approved'
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['reportCount', 'status', 'updatedAt'])
+        && request.resource.data.reportCount is int
+        && request.resource.data.reportCount == resource.data.reportCount + 1
+        && request.resource.data.status == 'reported'
+        && freshUpdateTimestamp();
+    }
+
+    function validPublicAnsweredUpdate() {
+      return resource.data.status == 'approved'
+        && resource.data.answered == false
+        && request.resource.data.answered == true
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['answered', 'answeredAt', 'answeredTestimony', 'updatedAt'])
+        && request.resource.data.answeredAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && (
+          !('answeredTestimony' in request.resource.data)
+          || (
+            request.resource.data.answeredTestimony is string
+            && request.resource.data.answeredTestimony.size() <= 500
+          )
+        );
+    }
 
     match /prayer_requests/{requestId} {
-      allow read: if resource.data.status == 'approved' || isAdmin();
-      allow create: if request.resource.data.title is string && request.resource.data.message is string && request.resource.data.email is string && request.resource.data.category is string && request.resource.data.urgent is bool && request.resource.data.prayerCount == 0 && request.resource.data.reportCount == 0 && request.resource.data.answered == false && request.resource.data.status == 'approved';
-      allow update: if isAdmin() || (resource.data.status == 'approved' && request.resource.data.diff(resource.data).changedKeys().hasOnly(['prayerCount', 'updatedAt']) && request.resource.data.prayerCount == resource.data.prayerCount + 1) || (resource.data.status == 'approved' && request.resource.data.status == 'reported' && request.resource.data.reportCount == resource.data.reportCount + 1 && request.resource.data.diff(resource.data).changedKeys().hasOnly(['reportCount', 'status', 'updatedAt'])) || (resource.data.status == 'approved' && resource.data.answered != true && request.resource.data.answered == true && request.resource.data.diff(resource.data).changedKeys().hasOnly(['answered', 'answeredAt', 'answeredTestimony', 'updatedAt']) && (!('answeredTestimony' in request.resource.data) || request.resource.data.answeredTestimony is string));
+      // Public wall queries must constrain status == "approved".
+      // Admins can read every moderation state.
+      allow get, list: if isAdmin() || resource.data.status == 'approved';
+
+      allow create: if validPrayerCreate();
+
+      allow update: if isAdmin()
+        || validPublicPrayerIncrement()
+        || validPublicReportTransition()
+        || validPublicAnsweredUpdate();
+
       allow delete: if isAdmin();
     }
 
-    match /reports/{reportId} { allow read, update, delete: if isAdmin(); allow create: if request.resource.data.requestId is string && request.resource.data.email is string && request.resource.data.emailKey is string && request.resource.data.category is string && request.resource.data.reason is string && request.resource.data.status == 'open'; }
-    match /report_bans/{banId} { allow get: if true; allow list, create, update, delete: if isAdmin(); }
-    match /volunteer_applications/{applicationId} { allow create: if request.resource.data.name is string && request.resource.data.email is string && request.resource.data.emailKey is string && request.resource.data.why is string && request.resource.data.status == 'submitted'; allow read, update, delete: if isAdmin(); }
-    match /volunteer_invites/{inviteId} { allow get: if true; allow list, create, update, delete: if isAdmin(); }
-    match /volunteers/{volunteerId} { allow read: if isSelf(volunteerId) || isAdmin(); allow create: if isSelf(volunteerId); allow update, delete: if isAdmin() || (isSelf(volunteerId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['agreementAccepted','agreementAcceptedAt','trainingCompleted','trainingCompletedAt','updatedAt'])); }
-    match /volunteer_chapter_requests/{chapterId} { allow read: if true; allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.email is string && request.resource.data.emailKey is string && request.resource.data.chapterName is string && request.resource.data.purpose is string && request.resource.data.status == 'submitted'; allow update, delete: if isAdmin(); }
-    match /volunteer_chapters/{chapterId} { allow read: if true; allow create, update, delete: if isAdmin(); }
-    match /chapter_members/{memberId} { allow create: if signedIn(); allow read, update, delete: if isAdmin(); }
+    // ============================================================
+    // PRAYER REPORTING / MODERATION
+    // ============================================================
 
-    match /volunteer_training_plans/{planId} { allow read: if isAdmin() || isSelf(planId); allow create, update, delete: if isAdmin(); }
-    match /volunteer_training_completions/{completionId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.reflection is string; allow read, update, delete: if isAdmin(); }
+    function validReportCreate() {
+      return verifyFields(
+          ['requestId', 'email', 'emailKey', 'category', 'reason', 'createdAt', 'status'],
+          []
+        )
+        && textBetween(request.resource.data.requestId, 1, 200)
+        && textBetween(request.resource.data.email, 3, 254)
+        && textBetween(request.resource.data.emailKey, 3, 300)
+        && textBetween(request.resource.data.category, 1, 80)
+        && textBetween(request.resource.data.reason, 10, 700)
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt == request.time
+        && exists(/databases/$(database)/documents/prayer_requests/$(request.resource.data.requestId))
+        && get(/databases/$(database)/documents/prayer_requests/$(request.resource.data.requestId)).data.status == 'approved'
+        && reporterNotBanned(request.resource.data.emailKey);
+    }
 
-    match /volunteer_activity_updates/{activityId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if isAdmin(); }
-    match /volunteer_service_logs/{logId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.summary is string; allow read, update, delete: if isAdmin(); }
-    match /volunteer_care_projects/{projectId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.title is string && request.resource.data.purpose is string && request.resource.data.status == 'submitted'; allow read, update, delete: if isAdmin(); }
-    match /volunteer_assignments/{assignmentId} { allow read: if isAdmin() || (signedIn() && resource.data.assignedToUid == request.auth.uid); allow create, delete: if isAdmin(); allow update: if isAdmin() || (signedIn() && resource.data.assignedToUid == request.auth.uid && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','completedAt','volunteerResponse','updatedAt'])); }
-    match /volunteer_contacts/{contactId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if isAdmin(); }
-    match /volunteer_leave_requests/{leaveId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if isAdmin(); }
-    match /volunteer_suggestions/{suggestionId} { allow create: if request.resource.data.title is string && request.resource.data.details is string && request.resource.data.status == 'submitted'; allow read, update, delete: if isAdmin(); }
-    match /volunteer_announcements/{announcementId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
-    match /volunteer_settings/{settingId} { allow read: if true; allow create, update, delete: if isAdmin(); }
-    match /volunteer_notes/{noteId} { allow read, create, update, delete: if isAdmin(); }
-    match /volunteer_badges/{badgeId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
-    match /chapter_reports/{reportId} { allow create: if signedIn(); allow read, update, delete: if isAdmin(); }
-    match /admin_notes/{noteId} { allow read, create, update, delete: if isAdmin(); }
-
-    match /bwr_partner_applications/{applicationId} {
-      allow create: if
-        request.resource.data.keys().hasAll(['organizationName','organizationType','website','city','state','serviceArea','contactName','contactRole','contactEmail','contactPhone','partnershipTypes','organizationSummary','peopleServed','estimatedBibleNeed','distributionExperience','whyPartner','additionalNotes','dignityAcknowledged','stewardshipAcknowledged','reportingAcknowledged','accuracyAcknowledged','status','source','schemaVersion','createdAt','updatedAt']) &&
-        request.resource.data.keys().hasOnly(['organizationName','organizationType','website','city','state','serviceArea','contactName','contactRole','contactEmail','contactPhone','partnershipTypes','organizationSummary','peopleServed','estimatedBibleNeed','distributionExperience','whyPartner','additionalNotes','dignityAcknowledged','stewardshipAcknowledged','reportingAcknowledged','accuracyAcknowledged','status','source','schemaVersion','createdAt','updatedAt']) &&
-        request.resource.data.organizationName is string && request.resource.data.organizationName.size() >= 2 && request.resource.data.organizationName.size() <= 160 &&
-        request.resource.data.organizationType is string && request.resource.data.organizationType.size() >= 2 && request.resource.data.organizationType.size() <= 100 &&
-        request.resource.data.website is string && request.resource.data.website.size() <= 300 &&
-        request.resource.data.city is string && request.resource.data.city.size() >= 1 && request.resource.data.city.size() <= 100 &&
-        request.resource.data.state is string && request.resource.data.state.size() >= 1 && request.resource.data.state.size() <= 100 &&
-        request.resource.data.serviceArea is string && request.resource.data.serviceArea.size() >= 2 && request.resource.data.serviceArea.size() <= 300 &&
-        request.resource.data.contactName is string && request.resource.data.contactName.size() >= 2 && request.resource.data.contactName.size() <= 120 &&
-        request.resource.data.contactRole is string && request.resource.data.contactRole.size() >= 2 && request.resource.data.contactRole.size() <= 120 &&
-        request.resource.data.contactEmail is string && request.resource.data.contactEmail.size() >= 5 && request.resource.data.contactEmail.size() <= 220 &&
-        request.resource.data.contactPhone is string && request.resource.data.contactPhone.size() <= 60 &&
-        request.resource.data.partnershipTypes is list && request.resource.data.partnershipTypes.size() >= 1 && request.resource.data.partnershipTypes.size() <= 7 &&
-        request.resource.data.organizationSummary is string && request.resource.data.organizationSummary.size() >= 10 && request.resource.data.organizationSummary.size() <= 1800 &&
-        request.resource.data.peopleServed is string && request.resource.data.peopleServed.size() >= 10 && request.resource.data.peopleServed.size() <= 1800 &&
-        request.resource.data.estimatedBibleNeed is string && request.resource.data.estimatedBibleNeed.size() <= 100 &&
-        request.resource.data.distributionExperience is string && request.resource.data.distributionExperience.size() <= 600 &&
-        request.resource.data.whyPartner is string && request.resource.data.whyPartner.size() >= 10 && request.resource.data.whyPartner.size() <= 2200 &&
-        request.resource.data.additionalNotes is string && request.resource.data.additionalNotes.size() <= 1800 &&
-        request.resource.data.dignityAcknowledged == true &&
-        request.resource.data.stewardshipAcknowledged == true &&
-        request.resource.data.reportingAcknowledged == true &&
-        request.resource.data.accuracyAcknowledged == true &&
-        request.resource.data.status == 'submitted' &&
-        request.resource.data.source == 'bwr-partners-page' &&
-        request.resource.data.schemaVersion == 1 &&
-        request.resource.data.createdAt == request.time &&
-        request.resource.data.updatedAt == request.time;
+    match /reports/{reportId} {
+      allow create: if validReportCreate();
       allow read, update, delete: if isAdmin();
     }
 
-    match /audit_logs/{logId} { allow read, create: if isAdmin(); allow update, delete: if false; }
-    match /settings/{settingId} { allow read: if true; allow create, update, delete: if isAdmin(); }
-    match /admins/{adminId} { allow read, write: if ownerEmail() || signedIn(); }
-    match /{document=**} { allow read, write: if false; }
+    match /report_bans/{banId} {
+      // Ban records can contain moderation details and are never public.
+      // Public report submission is blocked with reporterNotBanned().
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // VOLUNTEER APPLICATIONS / INVITES / PROFILES
+    // ============================================================
+
+    match /volunteer_applications/{applicationId} {
+      allow create: if
+        request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 160
+        && request.resource.data.email is string
+        && request.resource.data.email.size() >= 3
+        && request.resource.data.email.size() <= 254
+        && request.resource.data.emailKey is string
+        && request.resource.data.emailKey.size() >= 3
+        && request.resource.data.emailKey.size() <= 300
+        && request.resource.data.why is string
+        && request.resource.data.why.size() >= 5
+        && request.resource.data.why.size() <= 5000
+        && request.resource.data.status == 'submitted'
+        && !request.resource.data.keys().hasAny([
+          'approved',
+          'approvedAt',
+          'approvedBy',
+          'declinedAt',
+          'declinedBy',
+          'admin',
+          'isAdmin',
+          'permissions'
+        ]);
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /volunteer_invites/{inviteId} {
+      // A visitor may fetch an invite only when they already know its exact ID.
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /volunteers/{volunteerId} {
+      allow get: if isAdmin() || isSelf(volunteerId);
+      allow list: if isAdmin();
+
+      allow create: if isSelf(volunteerId)
+        && (
+          !('uid' in request.resource.data)
+          || request.resource.data.uid == request.auth.uid
+        )
+        && !request.resource.data.keys().hasAny([
+          'admin',
+          'isAdmin',
+          'permissions'
+        ]);
+
+      allow update: if isAdmin()
+        || (
+          isSelf(volunteerId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              'agreementAccepted',
+              'agreementAcceptedAt',
+              'trainingCompleted',
+              'trainingCompletedAt',
+              'updatedAt'
+            ])
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // VOLUNTEER CHAPTERS
+    // ============================================================
+
+    match /volunteer_chapter_requests/{chapterId} {
+      allow get, list: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.uid == request.auth.uid
+        );
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email is string
+        && request.resource.data.email.size() >= 3
+        && request.resource.data.email.size() <= 254
+        && request.resource.data.emailKey is string
+        && request.resource.data.chapterName is string
+        && request.resource.data.chapterName.size() >= 2
+        && request.resource.data.chapterName.size() <= 200
+        && request.resource.data.purpose is string
+        && request.resource.data.purpose.size() >= 5
+        && request.resource.data.purpose.size() <= 5000
+        && request.resource.data.status == 'submitted';
+
+      allow update, delete: if isAdmin();
+    }
+
+    match /volunteer_chapters/{chapterId} {
+      // Approved chapter records are intentionally public for verification.
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /chapter_members/{memberId} {
+      allow create: if signedIn()
+        && (
+          !('uid' in request.resource.data)
+          || request.resource.data.uid == request.auth.uid
+        )
+        && !request.resource.data.keys().hasAny([
+          'admin',
+          'isAdmin',
+          'permissions'
+        ]);
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // VOLUNTEER TRAINING / ACTIVITY / SERVICE
+    // ============================================================
+
+    match /volunteer_training_plans/{planId} {
+      allow read: if isAdmin() || isSelf(planId);
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /volunteer_training_completions/{completionId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.reflection is string
+        && request.resource.data.reflection.size() <= 8000;
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /volunteer_activity_updates/{activityId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid;
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /volunteer_service_logs/{logId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.summary is string
+        && request.resource.data.summary.size() >= 1
+        && request.resource.data.summary.size() <= 8000;
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /volunteer_care_projects/{projectId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 240
+        && request.resource.data.purpose is string
+        && request.resource.data.purpose.size() >= 1
+        && request.resource.data.purpose.size() <= 8000
+        && request.resource.data.status == 'submitted';
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /volunteer_assignments/{assignmentId} {
+      allow get, list: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.assignedToUid == request.auth.uid
+        );
+
+      allow create, delete: if isAdmin();
+
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.assignedToUid == request.auth.uid
+          && request.resource.data.assignedToUid == resource.data.assignedToUid
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              'status',
+              'completedAt',
+              'volunteerResponse',
+              'updatedAt'
+            ])
+        );
+    }
+
+    match /volunteer_contacts/{contactId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid;
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /volunteer_leave_requests/{leaveId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid;
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /volunteer_suggestions/{suggestionId} {
+      allow create: if
+        request.resource.data.title is string
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 240
+        && request.resource.data.details is string
+        && request.resource.data.details.size() >= 1
+        && request.resource.data.details.size() <= 8000
+        && request.resource.data.status == 'submitted'
+        && !request.resource.data.keys().hasAny([
+          'approved',
+          'approvedBy',
+          'reviewedBy',
+          'adminNote'
+        ]);
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /volunteer_announcements/{announcementId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /volunteer_settings/{settingId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /volunteer_notes/{noteId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    match /volunteer_badges/{badgeId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /chapter_reports/{reportId} {
+      allow create: if signedIn()
+        && (
+          !('uid' in request.resource.data)
+          || request.resource.data.uid == request.auth.uid
+        );
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // ADMIN NOTES
+    // ============================================================
+
+    match /admin_notes/{noteId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // BIBLES WITHIN REACH — PARTNERSHIP APPLICATIONS
+    // ============================================================
+
+    function validBwrPartnerApplicationCreate() {
+      return verifyFields(
+          [
+            'organizationName',
+            'organizationType',
+            'website',
+            'city',
+            'state',
+            'serviceArea',
+            'contactName',
+            'contactRole',
+            'contactEmail',
+            'contactPhone',
+            'partnershipTypes',
+            'organizationSummary',
+            'peopleServed',
+            'estimatedBibleNeed',
+            'distributionExperience',
+            'whyPartner',
+            'additionalNotes',
+            'dignityAcknowledged',
+            'stewardshipAcknowledged',
+            'reportingAcknowledged',
+            'accuracyAcknowledged',
+            'status',
+            'source',
+            'schemaVersion',
+            'createdAt',
+            'updatedAt'
+          ],
+          []
+        )
+        && textBetween(request.resource.data.organizationName, 2, 160)
+        && textBetween(request.resource.data.organizationType, 2, 100)
+        && textAtMost(request.resource.data.website, 300)
+        && textBetween(request.resource.data.city, 1, 100)
+        && textBetween(request.resource.data.state, 1, 100)
+        && textBetween(request.resource.data.serviceArea, 2, 300)
+        && textBetween(request.resource.data.contactName, 2, 120)
+        && textBetween(request.resource.data.contactRole, 2, 120)
+        && textBetween(request.resource.data.contactEmail, 5, 220)
+        && textAtMost(request.resource.data.contactPhone, 60)
+        && request.resource.data.partnershipTypes is list
+        && request.resource.data.partnershipTypes.size() >= 1
+        && request.resource.data.partnershipTypes.size() <= 7
+        && textBetween(request.resource.data.organizationSummary, 10, 1800)
+        && textBetween(request.resource.data.peopleServed, 10, 1800)
+        && textAtMost(request.resource.data.estimatedBibleNeed, 100)
+        && textAtMost(request.resource.data.distributionExperience, 600)
+        && textBetween(request.resource.data.whyPartner, 10, 2200)
+        && textAtMost(request.resource.data.additionalNotes, 1800)
+        && request.resource.data.dignityAcknowledged == true
+        && request.resource.data.stewardshipAcknowledged == true
+        && request.resource.data.reportingAcknowledged == true
+        && request.resource.data.accuracyAcknowledged == true
+        && request.resource.data.status == 'submitted'
+        && request.resource.data.source == 'bwr-partners-page'
+        && request.resource.data.schemaVersion == 1
+        && freshCreateTimestamps();
+    }
+
+    function validBwrStatusReviewUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'reviewedAt', 'reviewedBy', 'updatedAt'])
+        && request.resource.data.status in [
+          'submitted',
+          'review',
+          'approved',
+          'declined'
+        ]
+        && request.resource.data.reviewedAt == request.time
+        && request.resource.data.reviewedBy is string
+        && request.resource.data.reviewedBy.size() >= 3
+        && request.resource.data.reviewedBy.size() <= 254
+        && freshUpdateTimestamp();
+    }
+
+    function validBwrAdminNoteUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly([
+            'adminNote',
+            'adminNoteUpdatedAt',
+            'adminNoteUpdatedBy',
+            'updatedAt'
+          ])
+        && request.resource.data.adminNote is string
+        && request.resource.data.adminNote.size() <= 5000
+        && request.resource.data.adminNoteUpdatedAt == request.time
+        && request.resource.data.adminNoteUpdatedBy is string
+        && request.resource.data.adminNoteUpdatedBy.size() >= 3
+        && request.resource.data.adminNoteUpdatedBy.size() <= 254
+        && freshUpdateTimestamp();
+    }
+
+    match /bwr_partner_applications/{applicationId} {
+      allow create: if validBwrPartnerApplicationCreate();
+
+      allow read: if isAdmin();
+
+      // Applicant answers are immutable after submission.
+      // Admins may change only review metadata or internal notes.
+      allow update: if isAdmin()
+        && (
+          validBwrStatusReviewUpdate()
+          || validBwrAdminNoteUpdate()
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    // Reserved BWR operational collections.
+    // These remain admin-only until the partner portal/reporting workflow
+    // is intentionally implemented with partner-specific authorization.
+    match /bwr_partners/{partnerId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    match /bwr_distribution_reports/{reportId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    match /bwr_bible_requests/{requestId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // AUDIT LOG
+    // ============================================================
+
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+
+      allow create: if isAdmin()
+        && request.resource.data.action is string
+        && request.resource.data.action.size() >= 1
+        && request.resource.data.action.size() <= 160
+        && request.resource.data.adminEmail is string
+        && request.resource.data.adminEmail == request.auth.token.email
+        && request.resource.data.createdAt == request.time;
+
+      // Audit records are append-only.
+      allow update, delete: if false;
+    }
+
+    // ============================================================
+    // SITE SETTINGS
+    // ============================================================
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // ADMIN AUTHORIZATION REGISTRY
+    // ============================================================
+
+    match /admins/{adminId} {
+      // The owner is the root administrator and may manage the registry.
+      allow get: if isOwner()
+        || (
+          isSelf(adminId)
+          && resource.data.active == true
+        );
+
+      allow list: if isOwner();
+
+      // Nobody can grant themselves admin access.
+      allow create, update, delete: if isOwner();
+    }
+
+    // ============================================================
+    // DEFAULT DENY
+    // ============================================================
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }
