@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const links = [
     ['admin.html','Overview'],
     ['admin-requests.html','Requests'],
+    ['admin-bwr-partners.html','BWR Partners'],
     ['admin-reports.html','Reports'],
     ['admin-settings.html','Settings'],
     ['admin-audit.html','Audit Log'],
