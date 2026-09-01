@@ -117,7 +117,12 @@ function setupScrollAnimations() {
 
 function setupSuicidePreventionMonth() {
   const now = new Date();
-  if (now.getMonth() !== 8) return;
+  const params = new URLSearchParams(window.location.search);
+  const previewMode = params.get("spm") === "preview";
+  const resetMode = params.get("spm") === "reset";
+  const isSeptember = now.getMonth() === 8;
+  const isPreviewEve = now.getMonth() === 7 && now.getDate() === 31;
+  if (!isSeptember && !isPreviewEve && !previewMode && !resetMode) return;
 
   if (!document.querySelector('link[data-tpp-spm-style]')) {
     const stylesheet = document.createElement("link");
@@ -133,9 +138,14 @@ function setupSuicidePreventionMonth() {
   const previousFocus = document.activeElement;
   let hasSeen = false;
 
-  try { hasSeen = window.localStorage.getItem(storageKey) === "1"; } catch (_) {}
+  try {
+    if (resetMode) window.localStorage.removeItem(storageKey);
+    hasSeen = window.localStorage.getItem(storageKey) === "1";
+  } catch (_) {}
+  if (previewMode || resetMode) hasSeen = false;
 
   const remember = () => {
+    if (previewMode) return;
     try { window.localStorage.setItem(storageKey, "1"); } catch (_) {}
   };
 
