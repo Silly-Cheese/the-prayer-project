@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupLoader();
   setupPageTransitions();
   setupScrollAnimations();
+  setupCrisisResourceReviewStamp();
   setupSuicidePreventionMonth();
 
   const navLinks = document.querySelector(".nav-links");
@@ -113,6 +114,33 @@ function setupScrollAnimations() {
     });
   }, { threshold: 0.08, rootMargin: "0px 0px -20px 0px" });
   elements.forEach((element, index) => { element.classList.add("reveal"); element.style.setProperty("--reveal-delay", `${Math.min(index % 5, 4) * 25}ms`); observer.observe(element); });
+}
+
+function setupCrisisResourceReviewStamp() {
+  const page = window.location.pathname.split("/").pop() || "index.html";
+  if (page !== "crisis.html" || document.getElementById("crisisGuidanceReview")) return;
+  const host = document.querySelector(".footer-note") || document.querySelector("main");
+  if (!host) return;
+  const stamp = document.createElement("aside");
+  stamp.id = "crisisGuidanceReview";
+  stamp.setAttribute("aria-label", "Crisis guidance review information");
+  stamp.style.cssText = "margin-top:18px;padding:18px 20px;border-radius:22px;border:1px solid rgba(216,195,165,.18);background:rgba(216,195,165,.055);color:var(--muted);font-size:13px;line-height:1.7";
+  stamp.innerHTML = `<strong style="display:block;color:var(--warm2);margin-bottom:6px">Crisis guidance reviewed August 31, 2026</strong><span>This page is periodically checked against current U.S. guidance from the 988 Suicide & Crisis Lifeline, the National Institute of Mental Health, and SAMHSA. Resources can change; for immediate physical danger, use emergency services.</span><div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px"><a href="https://988lifeline.org/" target="_blank" rel="noopener" style="color:var(--warm2);font-weight:800">988 Lifeline</a><a href="https://www.nimh.nih.gov/health/topics/suicide-prevention" target="_blank" rel="noopener" style="color:var(--warm2);font-weight:800">NIMH</a><a href="https://www.samhsa.gov/find-help/988" target="_blank" rel="noopener" style="color:var(--warm2);font-weight:800">SAMHSA</a></div>`;
+  host.appendChild(stamp);
+}
+
+function trapFocusWithin(container) {
+  const handler = event => {
+    if (event.key !== "Tab" || !document.body.contains(container)) return;
+    const focusable = [...container.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(element => !element.hidden && element.offsetParent !== null);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  };
+  document.addEventListener("keydown", handler);
+  return () => document.removeEventListener("keydown", handler);
 }
 
 function setupSuicidePreventionMonth() {
@@ -281,9 +309,13 @@ function setupSuicidePreventionMonth() {
 
   document.body.appendChild(modal);
   document.body.classList.add("tpp-spm-modal-open");
+  const releaseFocusTrap = trapFocusWithin(modal);
+  const escapeHandler = event => { if (event.key === "Escape" && document.getElementById("tppSuicidePreventionModal")) dismiss(); };
 
   const dismiss = () => {
     remember();
+    releaseFocusTrap();
+    document.removeEventListener("keydown", escapeHandler);
     modal.remove();
     document.body.classList.remove("tpp-spm-modal-open");
     showBanner();
@@ -292,8 +324,6 @@ function setupSuicidePreventionMonth() {
 
   modal.querySelectorAll("[data-spm-dismiss]").forEach(button => button.addEventListener("click", dismiss));
   modal.querySelectorAll("[data-spm-remember]").forEach(link => link.addEventListener("click", remember));
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && document.getElementById("tppSuicidePreventionModal")) dismiss();
-  }, { once: true });
+  document.addEventListener("keydown", escapeHandler);
   requestAnimationFrame(() => modal.querySelector(".tpp-spm-close")?.focus());
 }
