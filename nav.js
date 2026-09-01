@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupLoader();
   setupPageTransitions();
   setupScrollAnimations();
+  setupSuicidePreventionMonth();
 
   const navLinks = document.querySelector(".nav-links");
   const navInner = document.querySelector(".nav-inner");
@@ -63,7 +64,7 @@ function setupPageTransitions() {
     const link = event.target.closest("a[href]");
     if (!link) return;
     const href = link.getAttribute("href");
-    if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:") || link.target === "_blank" || link.hasAttribute("download")) return;
+    if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:") || href.startsWith("sms:") || link.target === "_blank" || link.hasAttribute("download")) return;
     const destination = new URL(href, window.location.href), current = new URL(window.location.href);
     if (destination.origin !== current.origin || (destination.pathname === current.pathname && destination.hash)) return;
     event.preventDefault();
@@ -112,4 +113,102 @@ function setupScrollAnimations() {
     });
   }, { threshold: 0.08, rootMargin: "0px 0px -20px 0px" });
   elements.forEach((element, index) => { element.classList.add("reveal"); element.style.setProperty("--reveal-delay", `${Math.min(index % 5, 4) * 25}ms`); observer.observe(element); });
+}
+
+function setupSuicidePreventionMonth() {
+  const now = new Date();
+  if (now.getMonth() !== 8) return;
+
+  if (!document.querySelector('link[data-tpp-spm-style]')) {
+    const stylesheet = document.createElement("link");
+    stylesheet.rel = "stylesheet";
+    stylesheet.href = "./suicide-prevention-month.css";
+    stylesheet.dataset.tppSpmStyle = "true";
+    document.head.appendChild(stylesheet);
+  }
+
+  const page = window.location.pathname.split("/").pop() || "index.html";
+  const onCrisisPage = page === "crisis.html";
+  const storageKey = `tpp-suicide-prevention-seen-${now.getFullYear()}`;
+  const previousFocus = document.activeElement;
+  let hasSeen = false;
+
+  try { hasSeen = window.localStorage.getItem(storageKey) === "1"; } catch (_) {}
+
+  const remember = () => {
+    try { window.localStorage.setItem(storageKey, "1"); } catch (_) {}
+  };
+
+  const banner = document.createElement("section");
+  banner.className = "tpp-spm-banner";
+  banner.id = "tppSuicidePreventionBanner";
+  banner.setAttribute("aria-label", "Suicide Prevention Awareness Month resources");
+  banner.hidden = true;
+  banner.innerHTML = `
+    <div class="tpp-spm-banner-inner">
+      <div class="tpp-spm-banner-copy">
+        <div class="tpp-spm-banner-mark" aria-hidden="true">✦</div>
+        <div><strong>September is Suicide Prevention Awareness Month.</strong> <span>You matter, and you do not have to face a crisis alone. In the U.S., <b>call or text 988</b> for 24/7 support.</span></div>
+      </div>
+      <div class="tpp-spm-banner-actions">
+        <a class="tpp-spm-banner-action primary" href="tel:988" aria-label="Call 988 Suicide and Crisis Lifeline">Call 988</a>
+        <a class="tpp-spm-banner-action" href="sms:988" aria-label="Text 988 Suicide and Crisis Lifeline">Text 988</a>
+        <a class="tpp-spm-banner-action" href="crisis.html">Crisis Resources</a>
+      </div>
+    </div>`;
+
+  const nav = document.querySelector(".nav");
+  if (nav) nav.insertAdjacentElement("afterend", banner);
+  else document.body.prepend(banner);
+
+  const showBanner = () => { banner.hidden = false; };
+
+  if (onCrisisPage || hasSeen) {
+    showBanner();
+    return;
+  }
+
+  const modal = document.createElement("div");
+  modal.className = "tpp-spm-modal";
+  modal.id = "tppSuicidePreventionModal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "tppSpmTitle");
+  modal.setAttribute("aria-describedby", "tppSpmLead");
+  modal.innerHTML = `
+    <div class="tpp-spm-backdrop" aria-hidden="true"></div>
+    <div class="tpp-spm-dialog">
+      <button class="tpp-spm-close" type="button" data-spm-dismiss aria-label="Close Suicide Prevention Awareness Month message">×</button>
+      <div class="tpp-spm-eyebrow">September • Suicide Prevention Awareness Month</div>
+      <h2 id="tppSpmTitle">Your life has value. Your story is not finished.</h2>
+      <p class="tpp-spm-lead" id="tppSpmLead">September is a time to remember lives lost to suicide, stand beside people who have struggled, and make it easier for someone to say, “I need help.” At The Prayer Project, we want to say this clearly: no one should have to carry a crisis alone.</p>
+      <p>Prayer can be part of care. So can speaking with a trained crisis counselor. If you are overwhelmed, in emotional distress, thinking about suicide, worried about someone you love, or simply need someone to talk to, immediate support is available.</p>
+      <div class="tpp-spm-highlight"><strong>In the United States, call or text 988.</strong><span>The 988 Suicide & Crisis Lifeline is available 24 hours a day, 7 days a week, offering free, confidential, judgment-free support from trained crisis counselors.</span></div>
+      <p>Reaching out is not weakness, and asking for immediate help is not a failure of faith. This month is a reminder to check on people, listen without judgment, take warning signs seriously, and make sure the people around us know where help can be found.</p>
+      <div class="tpp-spm-actions">
+        <a class="tpp-spm-action primary" href="tel:988" data-spm-remember aria-label="Call 988 Suicide and Crisis Lifeline">Call 988</a>
+        <a class="tpp-spm-action secondary" href="sms:988" data-spm-remember aria-label="Text 988 Suicide and Crisis Lifeline">Text 988</a>
+        <a class="tpp-spm-action" href="crisis.html" data-spm-remember>Crisis Resources</a>
+        <button class="tpp-spm-action" type="button" data-spm-dismiss>Continue to Site</button>
+      </div>
+      <p class="tpp-spm-fineprint">If you or someone else is in immediate danger, call 911 or go to the nearest emergency room.</p>
+    </div>`;
+
+  document.body.appendChild(modal);
+  document.body.classList.add("tpp-spm-modal-open");
+
+  const dismiss = () => {
+    remember();
+    modal.remove();
+    document.body.classList.remove("tpp-spm-modal-open");
+    showBanner();
+    if (previousFocus && typeof previousFocus.focus === "function") previousFocus.focus();
+  };
+
+  modal.querySelectorAll("[data-spm-dismiss]").forEach(button => button.addEventListener("click", dismiss));
+  modal.querySelectorAll("[data-spm-remember]").forEach(link => link.addEventListener("click", remember));
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && document.getElementById("tppSuicidePreventionModal")) dismiss();
+  }, { once: true });
+  requestAnimationFrame(() => modal.querySelector(".tpp-spm-close")?.focus());
 }
