@@ -133,6 +133,7 @@ function setupSuicidePreventionMonth() {
   }
 
   const page = window.location.pathname.split("/").pop() || "index.html";
+  const onHome = page === "index.html" || page === "";
   const onCrisisPage = page === "crisis.html";
   const storageKey = `tpp-suicide-prevention-seen-${now.getFullYear()}`;
   const previousFocus = document.activeElement;
@@ -152,13 +153,13 @@ function setupSuicidePreventionMonth() {
   const banner = document.createElement("section");
   banner.className = "tpp-spm-banner";
   banner.id = "tppSuicidePreventionBanner";
-  banner.setAttribute("aria-label", "Suicide Prevention Awareness Month resources");
+  banner.setAttribute("aria-label", "Suicide Prevention Awareness Month crisis resources");
   banner.hidden = true;
   banner.innerHTML = `
     <div class="tpp-spm-banner-inner">
       <div class="tpp-spm-banner-copy">
-        <div class="tpp-spm-banner-mark" aria-hidden="true">✦</div>
-        <div><strong>September is Suicide Prevention Awareness Month.</strong> <span>You matter, and you do not have to face a crisis alone. In the U.S., <b>call or text 988</b> for 24/7 support.</span></div>
+        <div class="tpp-spm-banner-mark" aria-hidden="true">!</div>
+        <div><strong>September is Suicide Prevention Awareness Month.</strong><span>Suicidal thoughts and warning signs can be a crisis and should never be ignored. If you or someone you know may not be safe, <b>call or text 988 now.</b></span></div>
       </div>
       <div class="tpp-spm-banner-actions">
         <a class="tpp-spm-banner-action primary" href="tel:988" aria-label="Call 988 Suicide and Crisis Lifeline">Call 988</a>
@@ -170,6 +171,36 @@ function setupSuicidePreventionMonth() {
   const nav = document.querySelector(".nav");
   if (nav) nav.insertAdjacentElement("afterend", banner);
   else document.body.prepend(banner);
+
+  if (onHome && !document.getElementById("tppSpmHomeSection")) {
+    const homeSection = document.createElement("section");
+    homeSection.className = "tpp-spm-home";
+    homeSection.id = "tppSpmHomeSection";
+    homeSection.innerHTML = `
+      <div class="shell">
+        <div class="tpp-spm-home-card">
+          <div class="tpp-spm-home-top">
+            <div>
+              <div class="tpp-spm-home-kicker">September • Recognize the crisis</div>
+              <h2>Check on someone today.</h2>
+              <p>Someone can look okay and still be struggling. If something feels different, ask. Listen without judgment. Take statements about suicide seriously. You do not need perfect words to help someone reach support.</p>
+              <div class="tpp-spm-home-actions">
+                <a class="primary" href="tel:988">Call 988</a>
+                <a href="sms:988">Text 988</a>
+                <a href="crisis.html">View Crisis Resources</a>
+              </div>
+            </div>
+            <aside class="tpp-spm-home-callout">
+              <strong>It is okay to ask directly.</strong>
+              <p>If you are worried about someone, asking “Are you thinking about suicide?” can open an important conversation. Listen, stay present, and help them connect with immediate support. If there is life-threatening danger, call 911.</p>
+            </aside>
+          </div>
+        </div>
+      </div>`;
+    const wall = document.getElementById("wall");
+    if (wall) wall.insertAdjacentElement("beforebegin", homeSection);
+    else document.querySelector("main")?.appendChild(homeSection);
+  }
 
   const showBanner = () => { banner.hidden = false; };
 
@@ -191,17 +222,61 @@ function setupSuicidePreventionMonth() {
       <button class="tpp-spm-close" type="button" data-spm-dismiss aria-label="Close Suicide Prevention Awareness Month message">×</button>
       <div class="tpp-spm-eyebrow">September • Suicide Prevention Awareness Month</div>
       <h2 id="tppSpmTitle">Your life has value. Your story is not finished.</h2>
-      <p class="tpp-spm-lead" id="tppSpmLead">September is a time to remember lives lost to suicide, stand beside people who have struggled, and make it easier for someone to say, “I need help.” At The Prayer Project, we want to say this clearly: no one should have to carry a crisis alone.</p>
-      <p>Prayer can be part of care. So can speaking with a trained crisis counselor. If you are overwhelmed, in emotional distress, thinking about suicide, worried about someone you love, or simply need someone to talk to, immediate support is available.</p>
-      <div class="tpp-spm-highlight"><strong>In the United States, call or text 988.</strong><span>The 988 Suicide & Crisis Lifeline is available 24 hours a day, 7 days a week, offering free, confidential, judgment-free support from trained crisis counselors.</span></div>
-      <p>Reaching out is not weakness, and asking for immediate help is not a failure of faith. This month is a reminder to check on people, listen without judgment, take warning signs seriously, and make sure the people around us know where help can be found.</p>
+      <p class="tpp-spm-lead" id="tppSpmLead">September is a time to remember lives lost to suicide, stand beside people who have struggled, recognize warning signs, and make it easier for someone to say, “I need help.” At The Prayer Project, we want to be unmistakably clear: suicidal thoughts can be an urgent safety crisis, and no one should have to carry that crisis alone.</p>
+
+      <div class="tpp-spm-crisis-box">
+        <span class="label">This is a crisis</span>
+        <strong>If you may hurt yourself, have a suicide plan, or are afraid you may not stay safe, do not wait to see if it passes.</strong>
+        <span>Call or text 988 now and tell someone you trust what is happening. If there is immediate life-threatening danger, call 911 or go to the nearest emergency department.</span>
+      </div>
+
+      <div class="tpp-spm-emergency">
+        <h3>I may not be safe right now.</h3>
+        <p>You do not need to explain everything before asking for help. Choose the fastest safe option available to you.</p>
+        <div class="tpp-spm-emergency-actions">
+          <a href="tel:988" data-spm-remember>Call 988</a>
+          <a href="sms:988" data-spm-remember>Text 988</a>
+          <a class="danger" href="tel:911" data-spm-remember>Call 911</a>
+          <a href="crisis.html" data-spm-remember>Crisis Resources</a>
+        </div>
+      </div>
+
+      <div class="tpp-spm-section">
+        <h3>Warning signs deserve attention.</h3>
+        <p>Warning signs can look different from person to person, but these are reasons to check in and seek help—especially when they are new, increasing, or connected to a painful event or loss.</p>
+        <div class="tpp-spm-warning-grid">
+          <div class="tpp-spm-warning"><strong>Talking about wanting to die</strong>, having no reason to live, or believing others would be better off without them.</div>
+          <div class="tpp-spm-warning"><strong>Feeling hopeless, trapped, or in unbearable pain</strong>, or saying there is no solution.</div>
+          <div class="tpp-spm-warning"><strong>Withdrawing, saying goodbye, or giving away important possessions</strong> in an unusual or concerning way.</div>
+          <div class="tpp-spm-warning"><strong>Extreme mood or behavior changes</strong>, dangerous risk-taking, agitation, or major changes in sleep or substance use.</div>
+        </div>
+      </div>
+
+      <div class="tpp-spm-section">
+        <h3>Concerned about someone?</h3>
+        <p>Take statements about suicide seriously. You do not have to diagnose them or solve everything. Your job is to help them stay connected to people and professional support.</p>
+        <div class="tpp-spm-help-steps">
+          <div class="tpp-spm-help-step"><b>1</b><div><strong>Ask directly.</strong><span>“Are you thinking about suicide?” is an appropriate question when you are concerned.</span></div></div>
+          <div class="tpp-spm-help-step"><b>2</b><div><strong>Be there and listen.</strong><span>Stay calm, listen without judgment, and take what they say seriously.</span></div></div>
+          <div class="tpp-spm-help-step"><b>3</b><div><strong>Help keep them safe.</strong><span>If it is safe for you to do so, stay with them or help move them away from immediate danger while support is being contacted.</span></div></div>
+          <div class="tpp-spm-help-step"><b>4</b><div><strong>Help them connect.</strong><span>Call or text 988 together, involve a trusted person, or seek emergency care when needed.</span></div></div>
+          <div class="tpp-spm-help-step"><b>5</b><div><strong>Follow up.</strong><span>Check back in after the immediate moment. Continued connection matters.</span></div></div>
+        </div>
+      </div>
+
+      <div class="tpp-spm-faith">
+        <strong>Prayer and crisis care are not competing choices.</strong>
+        <span>A mental-health crisis is not evidence of weak faith. Prayer can be part of care, and so can calling 988, talking with a counselor, seeking medical care, or asking someone to stay with you. Asking for immediate help is not a failure of faith.</span>
+      </div>
+
+      <p>September is also a reminder for all of us: check on people, listen closely, notice changes, take warning signs seriously, and make sure the people around us know where help can be found.</p>
       <div class="tpp-spm-actions">
         <a class="tpp-spm-action primary" href="tel:988" data-spm-remember aria-label="Call 988 Suicide and Crisis Lifeline">Call 988</a>
         <a class="tpp-spm-action secondary" href="sms:988" data-spm-remember aria-label="Text 988 Suicide and Crisis Lifeline">Text 988</a>
         <a class="tpp-spm-action" href="crisis.html" data-spm-remember>Crisis Resources</a>
         <button class="tpp-spm-action" type="button" data-spm-dismiss>Continue to Site</button>
       </div>
-      <p class="tpp-spm-fineprint">If you or someone else is in immediate danger, call 911 or go to the nearest emergency room.</p>
+      <p class="tpp-spm-fineprint">In the United States, the 988 Suicide & Crisis Lifeline is available 24/7. If you or someone else is in immediate life-threatening danger, call 911 or go to the nearest emergency department.</p>
     </div>`;
 
   document.body.appendChild(modal);
