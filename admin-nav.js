@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['admin-requests.html','Requests'],
     ['admin-bwr-partners.html','BWR Partners'],
     ['admin-reports.html','Reports'],
+    ['admin-crisis-protocol.html','Crisis Protocol'],
     ['admin-settings.html','Settings'],
     ['admin-audit.html','Audit Log'],
     ['status.html','Public Status'],
