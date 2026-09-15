@@ -3077,6 +3077,66 @@ service cloud.firestore {
 
 
     // ========================================================================
+    // VOLUNTEER SERVICE OPPORTUNITIES
+    // ========================================================================
+
+    function validVolunteerOpportunityDocument() {
+      return request.resource.data.keys().hasAll([
+          'title', 'description', 'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'title', 'description', 'status', 'team', 'audience', 'location',
+          'minimumAge', 'capacity', 'automaticApproval', 'requiredTraining',
+          'startAt', 'endAt', 'createdBy', 'createdAt', 'updatedAt'
+        ])
+        && textBetween(request.resource.data.title, 1, 240)
+        && textAtMost(request.resource.data.description, 8000)
+        && request.resource.data.status in [
+          'draft', 'open', 'full', 'closed', 'cancelled', 'completed'
+        ];
+    }
+
+    match /volunteer_opportunities/{opportunityId} {
+      allow read: if signedIn();
+      allow create, update: if isVolunteerAdmin()
+        && validVolunteerOpportunityDocument();
+      allow delete: if isCoreAdmin();
+    }
+
+    function validOpportunityRequestCreate() {
+      return signedIn()
+        && volunteerProfileExists()
+        && request.resource.data.keys().hasAll([
+          'opportunityId', 'uid', 'name', 'email', 'status',
+          'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'opportunityId', 'uid', 'name', 'email', 'status',
+          'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.uid == currentUid()
+        && request.resource.data.status == 'requested'
+        && textBetween(request.resource.data.opportunityId, 1, 300)
+        && textAtMost(request.resource.data.name, 300)
+        && textAtMost(request.resource.data.email, 254)
+        && validCreateTimestamps();
+    }
+
+    match /volunteer_opportunity_requests/{requestId} {
+      allow create: if validOpportunityRequestCreate();
+      allow get, list: if isVolunteerAdmin()
+        || (signedIn() && resource.data.uid == currentUid());
+      allow update: if isVolunteerAdmin()
+        && changedOnly(['status', 'reviewedBy', 'reviewedAt', 'updatedAt'])
+        && request.resource.data.status in [
+          'requested', 'approved', 'waitlisted', 'declined', 'cancelled'
+        ]
+        && validUpdatedAt();
+      allow delete: if isCoreAdmin();
+    }
+
+
+    // ========================================================================
     // SECTION 47 — VOLUNTEER EVENTS
     // ========================================================================
 
