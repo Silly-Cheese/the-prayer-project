@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupScrollAnimations();
   setupCrisisResourceReviewStamp();
   setupSuicidePreventionMonth();
+  setupPublicFooter();
 
   const navLinks = document.querySelector(".nav-links");
   const navInner = document.querySelector(".nav-inner");
@@ -41,6 +42,46 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("click", event => { if (!event.target.closest(".nav-group")) closeDesktopDropdowns(); }, { passive: true });
   document.addEventListener("keydown", event => { if (event.key === "Escape") closeMenu(); });
 });
+
+function setupPublicFooter() {
+  if (!document.body.classList.contains("public-page")) return;
+  let footer = document.querySelector("footer");
+  if (!footer) {
+    footer = document.createElement("footer");
+    document.body.appendChild(footer);
+  }
+  footer.className = "tpp-footer";
+  footer.innerHTML = `
+    <div class="shell tpp-footer-inner">
+      <div class="tpp-footer-top">
+        <div class="tpp-footer-brand">
+          <div class="tpp-footer-mark" aria-hidden="true">✦</div>
+          <div>
+            <strong>The Prayer Project</strong>
+            <p>A place to ask for prayer, pray for others, find biblical encouragement, and carry compassion into practical service.</p>
+          </div>
+        </div>
+        <div class="tpp-footer-links">
+          <a href="index.html#wall">Prayer Wall</a>
+          <a href="index.html#submit">Request Prayer</a>
+          <a href="about.html">About</a>
+          <a href="answered.html">Answered Prayers</a>
+          <a href="lords-prayer.html">Lord's Prayer</a>
+          <a href="prayers.html">Prayers</a>
+          <a href="bible-story.html">Bible Story</a>
+          <a href="bibles-within-reach.html">Bibles Within Reach</a>
+          <a href="https://volunteer.ask4prayers.com/">Volunteer</a>
+          <a href="crisis.html">Crisis Resources</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="terms.html">Terms</a>
+        </div>
+      </div>
+      <div class="tpp-footer-bottom">
+        <span>Prayer • Presence • Practical Care</span>
+        <span><a href="status.html">Site Status</a> · <a href="login.html">Administration</a></span>
+      </div>
+    </div>`;
+}
 
 function setupLoader() {
   if (document.getElementById("siteLoader")) return;
