@@ -3,29 +3,372 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Prayer Project</title>
-  <meta name="description" content="A calm anonymous prayer wall where people can submit prayer requests and pray for others." />
+  <title>The Prayer Project | You Do Not Have to Carry It Alone</title>
+  <meta name="description" content="The Prayer Project is a dark, quiet place to request prayer, pray for others, find faith resources, and connect with practical outreach." />
+  <meta name="theme-color" content="#000000" />
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./theme.css">
-  <style>
-    .announcement{display:none;margin:28px auto 0;padding:16px 18px;border-radius:22px;background:rgba(216,195,165,.08);border:1px solid rgba(216,195,165,.2);color:var(--warm2);line-height:1.7}.hero{padding:92px 0 58px}.hero-grid{display:grid;grid-template-columns:1.03fr .97fr;gap:38px;align-items:center}.hero-copy{padding:18px 0}.hero-copy p{font-size:18px;line-height:1.9;color:var(--muted);max-width:720px}.verse{margin-top:28px;padding:26px;border-radius:28px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.035));border:1px solid var(--line);box-shadow:var(--shadow)}.verse-label{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--soft);font-weight:900;margin-bottom:12px}.verse blockquote{margin:0;color:var(--text);font-size:19px;line-height:1.75}.verse small{display:block;margin-top:12px;color:var(--warm);font-weight:900}.hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}.submit-card{padding:32px}.submit-card h2,.section-title h2{font-family:"Playfair Display",serif;font-size:42px;margin:0 0 10px;letter-spacing:-.04em}.submit-card p,.section-title p{color:var(--muted);line-height:1.8;margin:0}.form-grid{margin-top:24px;display:grid;gap:15px}label{display:grid;gap:8px;color:var(--muted);font-size:13px;font-weight:900}.hint{color:var(--soft);font-size:12px;line-height:1.55}.notice{display:none;margin-top:14px;padding:14px;border-radius:18px;line-height:1.6;font-size:14px}.notice.show{display:block}.notice.success{background:rgba(34,197,94,.1);border:1px solid rgba(200,247,208,.25);color:var(--success)}.notice.error{background:rgba(239,68,68,.1);border:1px solid rgba(245,183,183,.25);color:var(--danger)}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px}.stat{padding:22px}.stat strong{display:block;font-size:32px;color:var(--warm2)}.stat span{color:var(--soft);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em}section{position:relative;padding:64px 0}.section-title{display:flex;justify-content:space-between;gap:24px;align-items:end;margin-bottom:26px}.section-title p{max-width:720px}.toolbar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:26px}.toolbar input,.toolbar select{max-width:300px}.prayer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.prayer-card{padding:26px;border-radius:32px;min-height:300px;display:flex;flex-direction:column;gap:16px;transition:.2s ease}.prayer-card:hover{transform:translateY(-3px);border-color:rgba(216,195,165,.22)}.tag-row{display:flex;gap:8px;flex-wrap:wrap}.tag{padding:8px 12px;border-radius:999px;background:rgba(216,195,165,.1);color:var(--warm2);font-size:12px;font-weight:900;border:1px solid rgba(216,195,165,.18)}.tag.urgent{background:rgba(245,183,183,.1);color:#ffd6d6;border-color:rgba(245,183,183,.2)}.prayer-card h3{margin:0;font-size:23px;line-height:1.28}.prayer-card p{margin:0;color:var(--muted);line-height:1.75}.card-footer{margin-top:auto;display:grid;gap:12px}.meta{color:var(--soft);font-size:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.about-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.about-card{padding:28px}.about-card h3{margin:0 0 10px;font-size:22px}.about-card p{color:var(--muted);line-height:1.8;margin:0}.volunteer-callout{margin-top:22px;padding:28px;border-radius:30px;background:linear-gradient(135deg,rgba(216,195,165,.11),rgba(255,255,255,.035));border:1px solid rgba(216,195,165,.22);box-shadow:var(--shadow)}.volunteer-callout h3{margin:0 0 8px;font-size:26px}.volunteer-callout p{margin:0;color:var(--muted);line-height:1.8}.volunteer-callout .hero-actions{margin-top:18px}.initiative-feature{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;padding:34px;align-items:center}.initiative-feature h2{font-family:"Playfair Display",serif;font-size:clamp(40px,5vw,58px);letter-spacing:-.045em;line-height:1;margin:16px 0 14px}.initiative-feature p{color:var(--muted);line-height:1.85;margin:0}.initiative-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}.initiative-status{padding:28px;border-radius:26px;background:rgba(216,195,165,.07);border:1px solid rgba(216,195,165,.18)}.initiative-status span{display:block;color:var(--soft);font-size:11px;text-transform:uppercase;letter-spacing:.16em;font-weight:900}.initiative-status strong{display:block;font-family:"Playfair Display",serif;color:var(--warm2);font-size:40px;line-height:1;margin:14px 0}.initiative-status p{font-size:14px}.safety-note{margin-top:18px;color:var(--soft);font-size:13px;line-height:1.7}.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(216,195,165,.2),transparent);margin:8px 0}@media(max-width:980px){.hero-grid,.prayer-grid,.about-grid,.initiative-feature{grid-template-columns:1fr}.hero{padding-top:58px}.section-title{display:block}.stats{grid-template-columns:1fr}}@media(max-width:620px){.submit-card{padding:24px}.toolbar input,.toolbar select{max-width:none}.hero-actions .btn,.initiative-actions .btn{width:100%}}
-  </style>
+  <link rel="stylesheet" href="./home.css">
 </head>
-<body>
-  <nav class="nav"><div class="shell nav-inner"><a class="brand" href="#top"><div class="brand-mark">✦</div><div class="brand-title">The Prayer Project<span>Anonymous Prayer Wall</span></div></a><div class="nav-links"></div></div></nav>
-  <div class="shell"><div class="announcement" id="announcementBar"><strong>Announcement:</strong> <span id="announcementText"></span></div></div>
+<body class="home-page">
+  <nav class="nav">
+    <div class="shell nav-inner">
+      <a class="brand" href="#top" aria-label="The Prayer Project home">
+        <div class="brand-mark" aria-hidden="true">✦</div>
+        <div class="brand-title">The Prayer Project<span>Prayer • Presence • Practical Care</span></div>
+      </a>
+      <div class="nav-links"></div>
+    </div>
+  </nav>
+
+  <div class="shell">
+    <div class="announcement" id="announcementBar">
+      <strong>Announcement:</strong> <span id="announcementText"></span>
+    </div>
+  </div>
+
   <main id="top">
-    <header class="hero"><div class="shell hero-grid"><div class="hero-copy"><div class="eyebrow">A calm place to be carried in prayer</div><h1>You are not alone here.</h1><p>The Prayer Project is a quiet, anonymous space for the burdens people do not always know how to say out loud. Share a request, pray for someone else, and let a stranger know they were remembered before God.</p><div class="verse"><div class="verse-label">Daily Scripture</div><blockquote id="dailyVerseText">Come to Me, all who are weary and burdened, and I will give you rest.</blockquote><small id="dailyVerseReference">Matthew 11:28</small></div><div class="hero-actions"><a class="btn btn-primary" href="#submit">Submit a Prayer Request</a><a class="btn btn-secondary" href="#wall">Pray With Others</a><a class="btn btn-secondary" href="https://volunteer.ask4prayers.com/">Volunteer Network</a></div><div class="stats"><div class="stat"><strong id="totalRequests">0</strong><span>Public Requests</span></div><div class="stat"><strong id="totalPrayers">0</strong><span>Prayers Given</span></div><div class="stat"><strong id="urgentRequests">0</strong><span>Urgent Requests</span></div></div><div class="volunteer-callout"><h3>Want to serve beyond the prayer wall?</h3><p>Join the volunteer network to help with prayer support, encouragement projects, chapters, service logs, training, and organized care through The Prayer Project.</p><div class="hero-actions"><a class="btn btn-primary" href="https://volunteer.ask4prayers.com/application.html">Apply to Volunteer</a><a class="btn btn-secondary" href="https://volunteer.ask4prayers.com/">Learn About Volunteering</a></div></div></div><aside class="panel submit-card" id="submit"><h2>Submit a Prayer</h2><p>Your request will post publicly right away. If a request is reported, it is hidden until reviewed by an administrator.</p><form id="prayerForm" class="form-grid"><label>Prayer Title<input id="title" maxlength="90" required placeholder="Example: Please pray for my family"></label><label>Category<select id="category" required><option value="">Choose a category</option><option>Health</option><option>Family</option><option>Faith</option><option>Anxiety</option><option>School</option><option>Grief</option><option>Relationships</option><option>Financial</option><option>Other</option></select></label><label>Prayer Request<textarea id="message" maxlength="700" required placeholder="Share only what you are comfortable sharing."></textarea></label><label>Email for Prayer Notifications<input id="email" type="email" required placeholder="you@example.com"><span class="hint">Your email is kept private and used only for prayer notifications.</span></label><label>Urgency<select id="urgent"><option value="false">Normal Prayer Request</option><option value="true">Urgent Prayer Request</option></select></label><button class="btn btn-primary btn-block" type="submit" id="submitBtn">Submit Prayer Request</button><div id="formNotice" class="notice"></div><div class="safety-note">If you or someone else is in immediate danger, use the Crisis Help page or contact emergency services.</div></form></aside></div></header>
-    <section id="wall"><div class="shell"><div class="section-title"><div><h2>Prayer Wall</h2><p>Every request matters. Nothing here is ranked, promoted, or treated as more important than another. Read slowly, pray sincerely, and click when you have prayed.</p></div></div><div class="toolbar"><input id="searchInput" placeholder="Search prayer requests..."><select id="categoryFilter"><option value="all">All Categories</option><option>Health</option><option>Family</option><option>Faith</option><option>Anxiety</option><option>School</option><option>Grief</option><option>Relationships</option><option>Financial</option><option>Other</option></select></div><div class="prayer-grid" id="prayerGrid"><div class="empty">Loading the prayer wall...</div></div></div></section>
-    <div class="shell"><div class="divider"></div></div>
-    <section id="about"><div class="shell"><div class="section-title"><div><h2>How It Works</h2><p>A simple rhythm: submit, pray, encourage, and protect the space when needed.</p></div></div><div class="about-grid"><div class="about-card card"><h3>1. Submit</h3><p>Share your request privately. It posts publicly without your name attached.</p></div><div class="about-card card"><h3>2. Pray</h3><p>Visitors read through requests and click “Pray For” after taking time to pray.</p></div><div class="about-card card"><h3>3. Protect</h3><p>If a request is reported, it is hidden and sent to the admin dashboard for review.</p></div></div></div></section>
-    <div class="shell"><div class="divider"></div></div>
-    <section id="initiatives"><div class="shell"><div class="section-title"><div><h2>Prayer Project Initiatives</h2><p>Prayer is at the center of what we do, and some needs call us to carry that care into tangible outreach.</p></div></div><div class="initiative-feature card"><div><div class="eyebrow">Launching Late May 2027</div><h2>Bibles Within Reach</h2><p>A six-month fundraising and outreach initiative to purchase Bibles and provide them free of charge to people experiencing homelessness, financial hardship, or other barriers to obtaining Scripture.</p><div class="initiative-actions"><a class="btn btn-primary" href="bibles-within-reach.html">Explore the Initiative</a></div></div><aside class="initiative-status"><span>Current Stage</span><strong>Coming Soon</strong><p>The initiative is being prepared now. Public fundraising is planned to begin in late May 2027.</p></aside></div></div></section>
+    <header class="home-hero">
+      <div class="shell home-hero-grid">
+        <div class="hero-copy">
+          <div class="home-kicker">A quiet place for the things that feel heavy</div>
+          <h1>You do not have to <em>carry it alone.</em></h1>
+          <p class="home-hero-lead">
+            Ask for prayer without putting your name on display. Stop and pray for someone you may never meet.
+            Find Scripture, encouragement, and practical ways to carry care beyond the screen.
+          </p>
+
+          <div class="home-actions">
+            <a class="home-action primary" href="#submit">Request Prayer <span aria-hidden="true">→</span></a>
+            <a class="home-action secondary" href="#wall">Pray for Someone</a>
+            <a class="home-action danger" href="crisis.html">Get Help Now</a>
+          </div>
+
+          <p class="home-microcopy">
+            <strong>Anonymous by design.</strong> Public prayer requests do not display your name.
+            If you are in immediate danger, prayer is not a substitute for emergency or crisis support.
+          </p>
+        </div>
+
+        <aside class="hero-side" aria-label="Scripture and Prayer Project activity">
+          <div class="scripture-panel">
+            <div class="scripture-label">Scripture for today</div>
+            <blockquote id="dailyVerseText">Come to Me, all who are weary and burdened, and I will give you rest.</blockquote>
+            <small id="dailyVerseReference">Matthew 11:28</small>
+          </div>
+
+          <div class="hero-stat-grid" aria-label="Prayer wall statistics">
+            <div class="hero-stat">
+              <strong id="totalRequests">0</strong>
+              <span>Requests shared</span>
+            </div>
+            <div class="hero-stat">
+              <strong id="totalPrayers">0</strong>
+              <span>Prayers offered</span>
+            </div>
+            <div class="hero-stat">
+              <strong id="urgentRequests">0</strong>
+              <span>Urgent requests</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </header>
+
+    <section class="trust-ribbon" aria-label="Prayer Project principles">
+      <div class="shell trust-ribbon-grid">
+        <div class="trust-ribbon-item"><strong>No public names</strong><span>Share the burden without putting your identity on the wall.</span></div>
+        <div class="trust-ribbon-item"><strong>No popularity ranking</strong><span>A prayer with one response matters just as much as one with one hundred.</span></div>
+        <div class="trust-ribbon-item"><strong>Human moderation</strong><span>Reporting and review tools help protect the prayer wall.</span></div>
+        <div class="trust-ribbon-item"><strong>Crisis-aware</strong><span>Prayer and professional or emergency support can belong together.</span></div>
+      </div>
+    </section>
+
+    <section class="home-section wall-section" id="wall">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <span class="overline">The Prayer Wall</span>
+            <h2>Someone needs prayer today.</h2>
+          </div>
+          <p>
+            Read slowly. Choose a request. Pray sincerely. When you press the prayer button, the requester can be
+            notified that someone stopped and remembered them.
+          </p>
+        </div>
+
+        <div class="wall-topline">
+          <p>Nothing here is promoted because it is popular. Browse what is here and pray as you feel led.</p>
+        </div>
+
+        <div class="toolbar" aria-label="Prayer wall filters">
+          <input id="searchInput" type="search" placeholder="Search requests by word or topic..." aria-label="Search prayer requests">
+          <select id="categoryFilter" aria-label="Filter prayer requests by category">
+            <option value="all">Every category</option>
+            <option>Health</option>
+            <option>Family</option>
+            <option>Faith</option>
+            <option>Anxiety</option>
+            <option>School</option>
+            <option>Grief</option>
+            <option>Relationships</option>
+            <option>Financial</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="prayer-grid" id="prayerGrid">
+          <div class="empty">Opening the prayer wall...</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-section request-section" id="submit">
+      <div class="shell request-layout">
+        <div class="request-copy">
+          <div class="home-kicker">Request prayer</div>
+          <h2>Say what you can. Leave the rest with God.</h2>
+          <p>
+            You do not need polished words or a perfect explanation. Share only what you are comfortable sharing,
+            and the request can be carried by people who came here to pray.
+          </p>
+
+          <div class="request-promises">
+            <div class="request-promise">
+              <b>01</b>
+              <div><strong>Your name is not requested.</strong><span>The public wall is built around the request, not your identity.</span></div>
+            </div>
+            <div class="request-promise">
+              <b>02</b>
+              <div><strong>Your email stays private.</strong><span>It is used for prayer notifications and request ownership features, not shown on the wall.</span></div>
+            </div>
+            <div class="request-promise">
+              <b>03</b>
+              <div><strong>You can mark an answer later.</strong><span>Return with the same email to share that the prayer was answered.</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="submit-card">
+          <div class="submit-card-head">
+            <div class="step-label">Prayer Request</div>
+            <h3>What can we pray about?</h3>
+            <p>Fields marked by the form are required to post your request and support the prayer-notification system.</p>
+          </div>
+
+          <form id="prayerForm" class="form-grid">
+            <label class="full">
+              Prayer title
+              <input id="title" maxlength="90" required placeholder="A short description of what you need prayer for">
+            </label>
+
+            <label>
+              Category
+              <select id="category" required>
+                <option value="">Choose one</option>
+                <option>Health</option>
+                <option>Family</option>
+                <option>Faith</option>
+                <option>Anxiety</option>
+                <option>School</option>
+                <option>Grief</option>
+                <option>Relationships</option>
+                <option>Financial</option>
+                <option>Other</option>
+              </select>
+            </label>
+
+            <label>
+              Urgency
+              <select id="urgent">
+                <option value="false">Normal request</option>
+                <option value="true">Urgent request</option>
+              </select>
+            </label>
+
+            <label class="full">
+              What is happening?
+              <textarea id="message" maxlength="700" required placeholder="Share only what you are comfortable sharing publicly."></textarea>
+              <span class="hint">Avoid posting private identifying details such as addresses, phone numbers, passwords, or account information.</span>
+            </label>
+
+            <label class="full">
+              Private email for prayer notifications
+              <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
+              <span class="hint">Your email is not displayed with the public request.</span>
+            </label>
+
+            <div id="formNotice" class="notice"></div>
+
+            <div class="form-actions">
+              <button class="btn btn-primary btn-block" type="submit" id="submitBtn">Submit Prayer Request</button>
+              <div class="form-safety">
+                If you or someone else may be in immediate danger, use the
+                <a href="crisis.html">Crisis Help page</a> or contact emergency services.
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="mission-section" id="about">
+      <div class="shell">
+        <div class="mission-statement">
+          <span class="overline">Why this exists</span>
+          <h2>Some burdens are easy to say out loud. <span>Others are not.</span></h2>
+          <p>
+            The Prayer Project exists for the moment when someone wonders whether anybody would care enough to stop,
+            listen, and pray. We want the answer to be yes — and when care needs hands and feet, we want prayer to lead
+            naturally toward service.
+          </p>
+          <div class="mission-links">
+            <a class="home-action secondary" href="about.html">Our Story</a>
+            <a class="home-action secondary" href="answered.html">Answered Prayers</a>
+          </div>
+        </div>
+
+        <div class="pathways" aria-label="Ways The Prayer Project serves">
+          <article class="pathway">
+            <span class="pathway-index">01 / PRAYER</span>
+            <h3>Prayer Network</h3>
+            <p>A public wall built to make asking for prayer simpler and praying for strangers more personal.</p>
+            <a href="#wall">Enter the Prayer Wall →</a>
+          </article>
+          <article class="pathway">
+            <span class="pathway-index">02 / SCRIPTURE</span>
+            <h3>Bibles Within Reach</h3>
+            <p>A planned six-month outreach initiative focused on placing Bibles into the hands of people facing barriers to obtaining one.</p>
+            <a href="bibles-within-reach.html">Explore the Initiative →</a>
+          </article>
+          <article class="pathway">
+            <span class="pathway-index">03 / SERVICE</span>
+            <h3>Volunteer Network</h3>
+            <p>People who want to turn prayer into consistent service through encouragement, chapters, organized care, and outreach.</p>
+            <a href="https://volunteer.ask4prayers.com/">Join the Network →</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-section compact" id="initiatives">
+      <div class="shell">
+        <div class="bwr-feature">
+          <div class="bwr-copy">
+            <span class="overline">Preparing for 2027</span>
+            <h2>Bibles Within Reach</h2>
+            <p>
+              A six-month fundraising and distribution initiative being prepared by The Prayer Project to purchase
+              Bibles and provide them free of charge to people experiencing homelessness, financial hardship, or other
+              barriers to obtaining Scripture.
+            </p>
+            <div class="bwr-actions">
+              <a class="home-action primary" href="bibles-within-reach.html">Explore Bibles Within Reach</a>
+              <a class="home-action secondary" href="bwr-partners.html">Partner With the Initiative</a>
+            </div>
+          </div>
+
+          <aside class="bwr-visual" aria-label="Bibles Within Reach campaign goal">
+            <div class="bwr-goal">
+              <span>Planned campaign goal</span>
+              <strong>$50,000</strong>
+              <p>Campaign preparation is underway. Public fundraising has not begun.</p>
+              <div class="bwr-progress" aria-hidden="true"><span></span></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust-section">
+      <div class="shell trust-grid">
+        <div class="trust-title">
+          <div class="home-kicker">Trust matters here</div>
+          <h2>A prayer request can be deeply personal.</h2>
+          <p>
+            The experience is designed around dignity, restraint, and clear boundaries so people can ask for prayer
+            without the site turning vulnerable moments into engagement content.
+          </p>
+        </div>
+
+        <div class="trust-list">
+          <div class="trust-item">
+            <div class="trust-number">01</div>
+            <div><strong>Identity stays out of the public request.</strong><p>The form does not ask for a public name, and the private notification email is not rendered on prayer cards.</p></div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-number">02</div>
+            <div><strong>Prayer counts are encouragement, not a leaderboard.</strong><p>Requests are not ranked by popularity or promoted because they receive more prayer clicks.</p></div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-number">03</div>
+            <div><strong>Reports can remove a request from the wall for review.</strong><p>Visitors can flag harmful, inappropriate, or privacy-sensitive content for moderation.</p></div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-number">04</div>
+            <div><strong>Faith does not replace crisis care.</strong><p>The Project keeps crisis resources visible and encourages immediate professional or emergency help when safety is at risk.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="volunteer-section">
+      <div class="shell">
+        <div class="volunteer-panel">
+          <div>
+            <h2>Prayer does not have to end <span>when you close the page.</span></h2>
+            <p>
+              Join the volunteer network to pray, encourage, serve through organized projects, support chapters, and
+              help The Prayer Project build care that reaches beyond a screen.
+            </p>
+          </div>
+          <div class="volunteer-actions">
+            <a class="home-action primary" href="https://volunteer.ask4prayers.com/application.html">Apply to Volunteer</a>
+            <a class="home-action secondary" href="https://volunteer.ask4prayers.com/">Learn More</a>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
-  <footer><div class="shell">The Prayer Project exists to encourage, comfort, and remind people that they are not forgotten.<div class="footer-links"><a href="lords-prayer.html">Lord's Prayer</a><a href="prayers.html">Prayers</a><a href="bible-story.html">Bible Story</a><a href="bibles-within-reach.html">Bibles Within Reach</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="crisis.html">Crisis Resources</a><a href="https://volunteer.ask4prayers.com/">Volunteer</a><a href="login.html">Admin</a></div></div></footer>
+
+  <footer>
+    <div class="shell home-footer">
+      <div class="home-footer-grid">
+        <div class="home-footer-brand">
+          <div class="home-footer-mark" aria-hidden="true">✦</div>
+          <div class="home-footer-copy">
+            <strong>The Prayer Project</strong>
+            <p>
+              A place to ask for prayer, pray for others, find biblical encouragement, and carry compassion into practical service.
+            </p>
+          </div>
+        </div>
+
+        <div class="home-footer-links">
+          <a href="about.html">About</a>
+          <a href="prayers.html">Prayers</a>
+          <a href="lords-prayer.html">The Lord's Prayer</a>
+          <a href="answered.html">Answered Prayers</a>
+          <a href="bibles-within-reach.html">Bibles Within Reach</a>
+          <a href="https://volunteer.ask4prayers.com/">Volunteer</a>
+          <a href="crisis.html">Crisis Resources</a>
+          <a href="status.html">Site Status</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="terms.html">Terms</a>
+          <a href="login.html">Administration</a>
+        </div>
+      </div>
+
+      <div class="home-footer-bottom">
+        <span>Prayer • Presence • Practical Care</span>
+        <span>The Prayer Project</span>
+      </div>
+    </div>
+  </footer>
+
   <script src="./nav.js"></script>
   <script type="module" src="./verse.js"></script>
   <script type="module" src="./crisis-detection.js"></script>
