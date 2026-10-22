@@ -62,14 +62,53 @@ admins
 
 ## Priority List
 
-### Priority 1: Confirm Email Reliability
+### Priority 1: Restore Google Apps Script email delivery
 
-- Submit a brand-new prayer request with a real email.
-- Click `Pray For This Request`.
-- Check the browser console for `Prayer Project email response:`.
-- Confirm Apps Script returns `success: true`.
-- Check inbox and spam.
-- Confirm Apps Script execution logs show successful runs.
+The website uses Google Apps Script `MailApp`. The corrected source is
+[`google-apps-script-email.js`](./google-apps-script-email.js).
+The old implementation omitted the required plain-text `body` property when
+calling `MailApp.sendEmail({ ... })`; the script now provides both `body`
+and `htmlBody`, handles optional admin-copy failures separately, escapes
+HTML content, and exposes a safe owner-only diagnostic function.
+
+**Critical: Updating GitHub does NOT update an Apps Script web-app deployment.**
+The deployment that the public site calls must be updated separately.
+
+1. Open the Google Apps Script project whose deployed `/exec` URL matches
+   `EMAIL_ENDPOINT` in `app.js`. Use the Google account that owns its deployment.
+2. Replace the Apps Script source (normally `Code.gs`) with the entire current
+   `google-apps-script-email.js` source from this repository and **save** it.
+3. Select `diagnoseEmailSystem` in the Apps Script editor and click **Run**.
+   Approve MailApp authorization if prompted. Review **Executions** and logs.
+   Check that `adminEmailValid` is true and `remainingDailyRecipients` is
+   greater than zero.
+4. Select `testEmailSystem` and click **Run**. Confirm the execution completed
+   without error, then verify the test reaches the admin email inbox (including
+   spam). The script does not send a duplicate admin copy for this test.
+5. Choose **Deploy → Manage deployments → Edit (pencil) → Version: New version
+   → Deploy**. For the web app, use **Execute as: Me** (the authorized sender)
+   and **Who has access: Anyone**. Updating the existing deployment should
+   preserve its `/exec` URL. If you create a *different* deployment instead,
+   update `EMAIL_ENDPOINT` in `app.js` to the new URL.
+6. Submit a fresh test prayer request using an inbox you control, then click
+   **Pray For This Request**. Verify the Apps Script execution, inbox, and
+   Spam/Junk folder. Test from a different browser as well.
+7. If mail fails, inspect **Executions** for the actual exception, check the
+   remaining daily quota, deployment identity/permissions, and whether the
+   deployed script version includes the fix.
+
+**Important limitation:** The browser currently calls Apps Script with
+`mode: "no-cors"`. A resolved browser `fetch()` cannot verify that
+`MailApp.sendEmail` succeeded; it returns an opaque response. Consequently,
+the website must not say "Email sent" solely because the request dispatched.
+The prayer button now says "Prayer Counted". The Apps Script execution logs
+and recipient inbox are the source of truth for this temporary integration.
+
+**Security follow-up:** The current public prayer-request documents contain
+recipient email addresses, which are readable along with approved requests.
+Move private contact details to a separately secured Firestore path and route
+future email delivery through an authenticated, server-controlled function.
+Avoid putting mail API credentials or a shared secret in browser JavaScript.
 
 ### Priority 2: Confirm Firestore Rules
 
