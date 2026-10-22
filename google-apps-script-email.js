@@ -43,24 +43,47 @@ function doPost(e) {
       });
     }
 
+    // MailApp requires a plain-text body even when htmlBody is provided.
+    // Without it, the sendEmail(message) call fails.
+    if (MailApp.getRemainingDailyQuota() < 1) {
+      return response({
+        success: false,
+        code: "EMAIL_QUOTA_EXCEEDED",
+        message: "The daily email recipient quota has been reached."
+      });
+    }
+
     MailApp.sendEmail({
       to: email,
       subject: "Someone Prayed For You",
+      body: "Someone prayed for you today.\n\nPrayer Request: " + requestTitle +
+        "\n\n" + requestMessage + "\n\nTotal prayers received: " + prayerCount +
+        "\n\nThe Prayer Project — ask4prayers.com",
       htmlBody: buildPrayerEmailHtml(requestTitle, requestMessage, prayerCount),
       name: "The Prayer Project"
     });
 
-    if (isValidEmail(ADMIN_EMAIL)) {
-      MailApp.sendEmail({
+    // An optional admin copy must never turn a successful recipient send into
+    // a false failure, or double-send to the same inbox during testing.
+    if (isValidEmail(ADMIN_EMAIL) &&
+        ADMIN_EMAIL.toLowerCase() !== email.toLowerCase() &&
+        MailApp.getRemainingDailyQuota() > 0) {
+      try {
+        MailApp.sendEmail({
         to: ADMIN_EMAIL,
         subject: "Prayer Notification Sent",
+        body: "A prayer notification was sent.\nRecipient: " + email +
+          "\nPrayer count: " + prayerCount + "\nRequest: " + requestTitle,
         htmlBody: `
           <h2>Prayer Notification Sent</h2>
           <p><strong>Recipient:</strong> ${email}</p>
           <p><strong>Prayer Count:</strong> ${prayerCount}</p>
           <p><strong>Request:</strong> ${requestTitle}</p>
         `
-      });
+        });
+      } catch (adminCopyError) {
+        Logger.log("Optional admin copy failed: " + adminCopyError.toString());
+      }
     }
 
     return response({
@@ -69,6 +92,7 @@ function doPost(e) {
     });
 
   } catch (error) {
+    Logger.log("Prayer email sending failed: " + error.toString());
     return response({
       success: false,
       error: error.toString()
@@ -94,8 +118,8 @@ function buildPrayerEmailHtml(requestTitle, requestMessage, prayerCount) {
 
           <div style="background:#050505; border-left:4px solid #d8c3a5; padding:20px; border-radius:14px; margin:28px 0; color:#f7f2ea;">
             <strong>Prayer Request</strong><br><br>
-            ${requestTitle}<br><br>
-            <span style="color:#c8beb1;">${requestMessage}</span>
+            ${escapeHtml(requestTitle)}<br><br>
+            <span style="color:#c8beb1;">${escapeHtml(requestMessage)}</span>
           </div>
 
           <p style="color:#c8beb1;">
@@ -127,8 +151,26 @@ function sanitize(text) {
     .trim();
 }
 
+function escapeHtml(text) {
+  return String(text || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// Run this manually as the script owner from the Apps Script editor.
+function diagnoseEmailSystem() {
+  Logger.log(JSON.stringify({
+    adminEmailValid: isValidEmail(ADMIN_EMAIL),
+    remainingDailyRecipients: MailApp.getRemainingDailyQuota(),
+    message: "If this runs, MailApp authorization is available for this account."
+  }));
 }
 
 function testEmailSystem() {
