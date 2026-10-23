@@ -148,6 +148,14 @@ body.home-page{
 .bwr-progress{height:5px;margin-top:22px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
 .bwr-progress span{display:block;width:0;height:100%;background:var(--home-gold)}
 
+.future-initiative{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(270px,.75fr);gap:40px;align-items:center;margin-top:22px;padding:38px 42px;border:1px solid var(--home-line);border-radius:28px;background:linear-gradient(120deg,rgba(216,195,165,.075),rgba(216,195,165,.02) 50%,#050505)}
+.future-initiative-main .overline{display:block;color:var(--home-gold);font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
+.future-initiative h3{margin:14px 0 14px;font-family:"Playfair Display",Georgia,serif;font-size:clamp(30px,3.3vw,45px);line-height:1.1;letter-spacing:-.035em}
+.future-initiative-main p{margin:0;max-width:700px;color:var(--home-muted);font-size:14px;line-height:1.8}
+.future-initiative-note{padding-left:28px;border-left:1px solid var(--home-line)}
+.future-initiative-note strong{display:block;color:var(--home-cream);font-size:13px;line-height:1.6}
+.future-initiative-note p{margin:9px 0 0;color:var(--home-dim);font-size:12px;line-height:1.7}
+
 .trust-section{padding:105px 0}
 .trust-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:72px}
 .trust-title h2{margin:16px 0 18px;font-family:"Playfair Display",Georgia,serif;font-size:clamp(46px,5.3vw,72px);line-height:.98;letter-spacing:-.05em}
@@ -198,6 +206,8 @@ body.home-page{
   .trust-ribbon-item:nth-child(2){border-right:0}
   .trust-ribbon-item:nth-child(-n+2){border-bottom:1px solid var(--home-line-soft)}
   .pathways{grid-template-columns:1fr}
+  .future-initiative{grid-template-columns:1fr;gap:22px}
+  .future-initiative-note{border-left:0;border-top:1px solid var(--home-line);padding:22px 0 0}
   .home-footer-grid{grid-template-columns:1fr;gap:36px}
 }
 @media(max-width:680px){
@@ -225,6 +235,8 @@ body.home-page{
   .pathways{margin-top:44px}
   .pathway{min-height:230px;padding:26px}
   .pathway h3{margin-top:34px}
+  .future-initiative{padding:28px 24px}
+  .future-initiative h3{font-size:34px}
   .bwr-copy{padding:36px 26px}
   .bwr-visual{min-height:310px;padding:30px 26px}
   .bwr-visual:before{inset:28px}
