@@ -13,7 +13,20 @@
   <link rel="stylesheet" href="./theme.css">
   <link rel="stylesheet" href="./public.css">
   <link rel="stylesheet" href="./interior.css">
-  <link rel="stylesheet" href="./scholarship.css?v=beacon-20261024-1">
+  <link rel="stylesheet" href="./beacon-layout-20261024.css">
+  <style>
+    /* Critical mobile layout fallback: protects against a stale stylesheet. */
+    @media (max-width: 680px) {
+      .public-page.scholarship-page .s-hero h1 { font-size: clamp(37px,10.1vw,44px)!important; line-height:1.095!important; }
+      .public-page.scholarship-page .s-hero-lead {font-size:15px!important;line-height:1.7!important}
+      .public-page.scholarship-page .s-criteria { display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+      .public-page.scholarship-page .s-criteria>div {display:flex!important;flex-direction:column!important;gap:8px!important}
+      .public-page.scholarship-page .s-criteria>div>span,
+      .public-page.scholarship-page .s-criteria>div>strong,
+      .public-page.scholarship-page .s-criteria>div>small { display:block!important }
+      .public-page.scholarship-page .s-committee-grid {display:grid!important;grid-template-columns:1fr!important;gap:11px!important}
+    }
+  </style>
 </head>
 <body class="public-page scholarship-page">
   <nav class="nav" aria-label="Main navigation">
@@ -24,7 +37,7 @@
     <header class="s-hero">
       <div class="shell s-hero-grid">
         <div>
-          <div class="s-kicker">The Prayer Project presents · A future initiative</div>
+          <div class="s-kicker">A future Prayer Project initiative</div>
           <div class="s-beacon-identity" aria-label="Beacon Scholars scholarship initiative"><span class="s-beacon-symbol" aria-hidden="true">✦</span><span>BEACON <b>SCHOLARS</b></span></div>
           <h1>Potential deserves <em>a chance to shine.</em></h1>
           <p class="s-hero-lead">A GPA does not tell someone's whole story. Beacon Scholars is our vision for honoring the heart, resilience, and promise of students in grades 9–12. When this program is funded and approved, we hope to help young people take their next step with confidence—not because they have perfect records, but because their futures matter.</p>
@@ -61,11 +74,20 @@
           </div>
           <aside class="s-future-note" aria-label="Fundraising phases">
             <span>Our intended sequence</span>
-            <ol>
-              <li><b>01</b><div><strong>Bibles Within Reach</strong><small>Complete this initiative first</small></div></li>
-              <li><b>02</b><div><strong>Beacon fundraising</strong><small>Seek as much sustainable support as possible</small></div></li>
-              <li><b>03</b><div><strong>Beacon Scholars</strong><small>Announce funded opportunities after approval</small></div></li>
-            </ol>
+            <div class="s-phase-list" role="list">
+              <div class="s-phase" role="listitem">
+                <span class="s-phase-number" aria-hidden="true">01</span>
+                <div class="s-phase-content"><h3>Bibles Within Reach</h3><p>Complete this initiative first</p></div>
+              </div>
+              <div class="s-phase" role="listitem">
+                <span class="s-phase-number" aria-hidden="true">02</span>
+                <div class="s-phase-content"><h3>Beacon fundraising</h3><p>Seek as much sustainable support as possible</p></div>
+              </div>
+              <div class="s-phase" role="listitem">
+                <span class="s-phase-number" aria-hidden="true">03</span>
+                <div class="s-phase-content"><h3>Beacon Scholars</h3><p>Announce funded opportunities after approval</p></div>
+              </div>
+            </div>
           </aside>
         </div>
       </div>
