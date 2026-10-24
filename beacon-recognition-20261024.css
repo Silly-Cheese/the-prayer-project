@@ -64,3 +64,8 @@
   .public-page.scholarship-page .beacon-recognition-steps article{padding:20px 19px}
   .public-page.scholarship-page .beacon-recognition-steps h3{margin:10px 0 7px}
 }
+
+.public-page.scholarship-page .beacon-future-rubric-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px 30px;flex-wrap:wrap;margin:0 0 16px;padding:18px 20px;border-radius:16px;border:1px solid var(--s-line);background:rgba(222,198,164,.055)}
+.public-page.scholarship-page .beacon-future-rubric-title strong{display:block;color:var(--s-cream);font-size:14px;line-height:1.4}
+.public-page.scholarship-page .beacon-future-rubric-title span{display:block;max-width:620px;color:var(--s-muted);font-size:12px;line-height:1.65}
+@media(max-width:680px){.public-page.scholarship-page .beacon-future-rubric-title{display:grid;padding:17px}}
