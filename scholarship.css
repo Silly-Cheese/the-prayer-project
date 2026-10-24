@@ -112,3 +112,95 @@
 @media(max-width:680px){.s-criteria{grid-template-columns:1fr 1fr;gap:9px}.s-criteria>div{padding:19px 16px}.s-criteria strong{font-size:26px}.s-criteria small{font-size:11px}.s-reference-area{margin-top:38px;padding-top:38px}.s-essay blockquote{font-size:16px}}
 @media(max-width:680px){.scholarship-page .shell{width:calc(100% - 30px)}.s-hero{padding:56px 0}.s-hero h1{font-size:clamp(45px,11vw,63px)}.s-section{padding:60px 0}.s-hero-actions{display:grid}.s-button{width:100%}.s-awards,.s-grid2,.s-steps,.s-score,.s-timeline,.s-faq{grid-template-columns:1fr}.s-award,.s-panel{padding:24px}.s-essay{padding:24px}.s-end{padding:30px 24px}.s-hero-aside{padding:26px}.s-heading{gap:14px}.s-localnav .shell{gap:11px 18px}.s-score div{padding:20px}}
 @media(prefers-reduced-motion:reduce){.s-button{transition:none}}
+
+
+/* Beacon Scholars — program identity, next chapter, and final mobile UI layer */
+.scholarship-page .s-beacon-identity{display:inline-flex;align-items:center;gap:13px;margin:19px 0 3px;color:var(--s-cream);font-size:clamp(17px,2.4vw,25px);font-weight:850;letter-spacing:.17em;line-height:1.25}
+.scholarship-page .s-beacon-identity b{color:var(--s-gold)}
+.scholarship-page .s-beacon-symbol{display:inline-flex;align-items:center;justify-content:center;flex:0 0 48px;width:48px;height:48px;border:1px solid rgba(222,198,164,.34);border-radius:17px;background:linear-gradient(145deg,rgba(222,198,164,.13),rgba(222,198,164,.025));box-shadow:0 0 35px rgba(222,198,164,.055);color:var(--s-gold);font-size:26px;letter-spacing:0}
+.scholarship-page .s-hero h1{margin-top:19px}
+.scholarship-page .s-hero-note{max-width:740px;border-left:2px solid rgba(222,198,164,.5);padding-left:14px}
+.scholarship-page .s-hero-note strong{color:var(--s-cream)}
+.scholarship-page .s-future-section{padding:78px 0}
+.scholarship-page .s-future-layout{display:grid;grid-template-columns:54px minmax(0,1.2fr) minmax(250px,.75fr);gap:24px;align-items:start}
+.scholarship-page .s-future-icon{display:grid;place-items:center;width:50px;height:50px;border-radius:16px;color:var(--s-gold);background:rgba(222,198,164,.09);border:1px solid var(--s-line);font-size:25px}
+.scholarship-page .s-future-content h2{margin:14px 0 20px;font-family:"Playfair Display",Georgia,serif;font-size:clamp(34px,4vw,53px);line-height:1.1;letter-spacing:-.04em;color:var(--s-cream)}
+.scholarship-page .s-future-content p{color:var(--s-muted);font-size:14px;line-height:1.84;max-width:770px;margin:0 0 15px}
+.scholarship-page .s-future-content p strong{color:var(--s-cream)}
+.scholarship-page .s-future-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.scholarship-page .s-future-note{padding:25px 25px 20px;border:1px solid var(--s-line);border-radius:23px;background:linear-gradient(155deg,rgba(222,198,164,.07),#080706 70%)}
+.scholarship-page .s-future-note>span{display:block;color:var(--s-gold);font-size:10px;letter-spacing:.17em;text-transform:uppercase;font-weight:850;margin-bottom:14px}
+.scholarship-page .s-future-note ol{list-style:none;margin:0;padding:0;display:grid}
+.scholarship-page .s-future-note li{display:flex;gap:14px;align-items:flex-start;padding:17px 0;border-top:1px solid var(--s-line)}
+.scholarship-page .s-future-note li>b{font-family:"Playfair Display",Georgia,serif;color:var(--s-gold);font-size:22px;font-weight:700;line-height:1}
+.scholarship-page .s-future-note li strong{display:block;font-size:13px;color:var(--s-cream);line-height:1.5}
+.scholarship-page .s-future-note li small{display:block;font-size:12px;color:var(--s-muted);line-height:1.65;margin-top:4px}
+.scholarship-page .s-award-range{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:33px 37px;margin-bottom:17px;border-radius:27px;border:1px solid rgba(222,198,164,.31);background:radial-gradient(circle at 90% 40%,rgba(222,198,164,.14),transparent 20rem),linear-gradient(130deg,#15100b,#080706 70%)}
+.scholarship-page .s-award-range strong{display:block;font-family:"Playfair Display",Georgia,serif;font-size:clamp(41px,5.8vw,72px);line-height:1.15;letter-spacing:-.045em;color:var(--s-cream);margin:9px 0}
+.scholarship-page .s-award-range strong em{color:var(--s-gold);font-weight:400;font-style:normal}
+.scholarship-page .s-award-range p{font-size:12px;color:var(--s-muted);line-height:1.6;margin:0}
+.scholarship-page .s-award-range-icon{font-size:78px;line-height:1;color:rgba(222,198,164,.36)}
+.scholarship-page .s-award{min-width:0;background:linear-gradient(160deg,rgba(255,255,255,.028),rgba(255,255,255,.008));box-shadow:0 16px 45px rgba(0,0,0,.14)}
+.scholarship-page .s-award h3{margin-top:22px}
+.scholarship-page .s-award .s-amount{font-size:clamp(28px,3vw,40px);white-space:normal}
+.scholarship-page .s-criteria{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 26px}
+.scholarship-page .s-criteria>div{display:flex;min-width:0;flex-direction:column;align-items:flex-start;gap:0;padding:25px 23px;border-radius:20px;border:1px solid rgba(222,198,164,.24);background:linear-gradient(155deg,rgba(222,198,164,.09),#0b0907 75%);box-shadow:0 15px 36px rgba(0,0,0,.14)}
+.scholarship-page .s-criteria>div>span{display:block!important;position:static;font-size:10px;line-height:1.5;letter-spacing:.14em;text-transform:uppercase;font-weight:850;color:var(--s-gold);margin:0 0 12px}
+.scholarship-page .s-criteria>div>strong{display:block!important;position:static;color:var(--s-cream);font-family:"Playfair Display",Georgia,serif;font-size:clamp(27px,3vw,38px);line-height:1.12;letter-spacing:-.03em;margin:0 0 12px}
+.scholarship-page .s-criteria>div>small{display:block!important;position:static;font-size:12px;line-height:1.63;color:var(--s-muted)}
+.scholarship-page .s-panel{min-width:0}
+.scholarship-page .s-committee{margin:40px 0 33px;border-radius:26px;background:linear-gradient(135deg,rgba(222,198,164,.055),#080706 60%)}
+.scholarship-page .s-committee-title{min-width:0}
+.scholarship-page .s-committee-title .s-kicker{display:block}
+.scholarship-page .s-committee-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.scholarship-page .s-committee-grid>article{display:flex;flex-direction:column;gap:0;min-width:0;padding:24px 21px;border-radius:19px;background:linear-gradient(160deg,rgba(255,255,255,.025),rgba(255,255,255,.006));border:1px solid rgba(222,198,164,.18)}
+.scholarship-page .s-committee-grid>article>span{display:block!important;color:var(--s-gold);letter-spacing:.15em;font-size:10px;font-weight:850;line-height:1.5}
+.scholarship-page .s-committee-grid>article>h4{display:block;color:var(--s-cream);margin:17px 0 10px;font-size:16px;line-height:1.3}
+.scholarship-page .s-committee-grid>article>p{display:block;margin:0;color:var(--s-muted);font-size:12px;line-height:1.75}
+.scholarship-page .s-committee-ethics{padding:18px 20px;margin-top:20px;border-top:1px solid var(--s-line);border-radius:0 0 10px 10px;color:var(--s-muted);font-size:12px;line-height:1.8}
+.scholarship-page .s-timeline article{padding:22px 21px;border:1px solid var(--s-line);border-top:3px solid var(--s-gold);border-radius:16px;background:#090806}
+.scholarship-page .s-timeline article strong{font-size:13px;line-height:1.5}
+.scholarship-page :is(#future,#awards,#eligibility,#application,#references,#essay,#review,#donors,#questions){scroll-margin-top:112px}
+@media(max-width:1050px){
+  .scholarship-page .s-future-layout{grid-template-columns:48px minmax(0,1fr)}
+  .scholarship-page .s-future-note{grid-column:2;max-width:690px}
+  .scholarship-page .s-criteria{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .scholarship-page .s-committee-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:680px){
+  .scholarship-page .s-hero{padding:59px 0 54px}
+  .scholarship-page .s-beacon-identity{margin:18px 0 4px;gap:10px;font-size:17px;letter-spacing:.11em}
+  .scholarship-page .s-beacon-symbol{width:40px;height:40px;flex-basis:40px;font-size:21px;border-radius:13px}
+  .scholarship-page .s-hero h1{font-size:clamp(44px,11.8vw,60px);line-height:1.04}
+  .scholarship-page .s-section{padding:60px 0}
+  .scholarship-page .s-future-section{padding:58px 0}
+  .scholarship-page .s-future-layout{grid-template-columns:1fr;gap:17px}
+  .scholarship-page .s-future-icon{width:43px;height:43px}
+  .scholarship-page .s-future-content h2{font-size:clamp(35px,9vw,44px);margin:9px 0 17px}
+  .scholarship-page .s-future-note{grid-column:auto;width:100%;padding:22px}
+  .scholarship-page .s-future-actions{display:grid}
+  .scholarship-page .s-future-actions .s-button{width:100%}
+  .scholarship-page .s-award-range{padding:28px 24px;border-radius:21px;overflow:hidden}
+  .scholarship-page .s-award-range strong{font-size:clamp(33px,9.4vw,53px);line-height:1.14}
+  .scholarship-page .s-award-range-icon{display:none}
+  .scholarship-page .s-criteria{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 19px}
+  .scholarship-page .s-criteria>div{min-height:137px;padding:17px 14px;border-radius:17px}
+  .scholarship-page .s-criteria>div>span{font-size:9px;margin-bottom:8px;letter-spacing:.1em}
+  .scholarship-page .s-criteria>div>strong{font-size:clamp(23px,6.5vw,30px);margin-bottom:7px}
+  .scholarship-page .s-criteria>div>small{font-size:11px;line-height:1.5}
+  .scholarship-page .s-committee{padding:24px 17px;border-radius:21px;margin-top:29px}
+  .scholarship-page .s-committee-title{display:grid;grid-template-columns:1fr;gap:9px;margin:0 0 19px}
+  .scholarship-page .s-committee h3{font-size:clamp(29px,7.4vw,36px);line-height:1.12}
+  .scholarship-page .s-committee-grid{grid-template-columns:1fr;gap:11px}
+  .scholarship-page .s-committee-grid>article{padding:20px 19px;border-radius:16px}
+  .scholarship-page .s-committee-grid>article>h4{margin:9px 0 8px;font-size:17px}
+  .scholarship-page .s-committee-ethics{padding:18px 4px 0;margin-top:20px;border-radius:0}
+  .scholarship-page .s-timeline{gap:11px}
+  .scholarship-page .s-timeline article{padding:18px 17px}
+  .scholarship-page .s-heading h2{font-size:clamp(35px,9vw,43px)}
+  .scholarship-page .s-panel{padding:24px 21px}
+}
+@media(max-width:360px){
+  .scholarship-page .s-criteria{grid-template-columns:1fr}
+  .scholarship-page .s-criteria>div{min-height:0}
+}
