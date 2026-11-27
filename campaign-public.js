@@ -5,7 +5,7 @@ export async function mountCampaigns(){
  if(!home&&!document.body.classList.contains("public-page"))return false;
  if(page==="crisis.html"||page==="login.html"||page.startsWith("admin"))return false;
  const snap=await getDocs(query(collection(db,"site_campaigns"),where("enabled","==",true)));
- const rows=selected(snap.docs.map(d=>({...d.data(),id:d.id})).filter(c=>home||c.scope==="public"));
+ const rows=selected(snap.docs.map(d=>({...d.data(),id:d.id})).filter(c=>home||(c.scope==="public"&&(c.banner||c.popup))));
  if(!rows.length)return false;
  const style=el("style");style.textContent=`
  .managed-campaign{box-sizing:border-box;background:var(--campaign-bg);color:var(--campaign-ink);padding:18px 22px;overflow-wrap:anywhere}
