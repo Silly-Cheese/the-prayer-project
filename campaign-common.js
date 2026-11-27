@@ -34,3 +34,11 @@ export const builtins=[
 ];
 export const isBuiltin=id=>builtins.some(c=>c.id===id);
 export function seasonTitle(c,date=dateKey()){if(c.id!=="season-thanksgiving"||c.title!==builtins[0].title)return c.title;const d=new Date(date+"T00:00:00Z"),first=new Date(Date.UTC(d.getUTCFullYear(),10,1)),th=1+(4-first.getUTCDay()+7)%7+21;if(d.getUTCMonth()===10&&d.getUTCDate()===th)return "Happy Thanksgiving!";if(d.getUTCMonth()===10&&Math.abs(d.getUTCDate()-th)<=3)return "Happy Thanksgiving Week!";return c.title;}
+
+export function appearance(c){
+ const preset=c.id==="season-thanksgiving"?["#75451f","#29190e","#f4d29b"]:c.id==="season-spm"?["#71343e","#132d2c","#ffd3d6"]:[c.color||"#8a5734","#171310","#f2d9b3"];
+ const mode=c.backgroundMode|| (isBuiltin(c.id)?"gradient":"solid");
+ const a=color(c.color||preset[0]),z=color(c.colorEnd||preset[1]),accent=color(c.accent||preset[2]);
+ const angle=[0,45,90,135,180,225,270,315].includes(Number(c.angle))?Number(c.angle):135;
+ return {background:mode==="gradient"?"linear-gradient("+angle+"deg,"+a+","+z+")":a,accent,foreground:mode==="gradient"?"#fff":ink(a),scrim:mode==="gradient"?"linear-gradient(#0009,#0009), ":"",mode};
+}

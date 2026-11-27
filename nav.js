@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const params=new URLSearchParams(location.search);
     if(params.get("gratitude")==="preview")setupGratitudeMonth();
     else if(params.get("spm")==="preview"||params.get("spm")==="reset")setupSuicidePreventionMonth();
-    else import("./campaign-public.js?v=season-2").then(m=>m.mountCampaigns()).catch(()=>{setupSuicidePreventionMonth();setupGratitudeMonth();});
+    else import("./campaign-public.js?v=design-3").then(m=>m.mountCampaigns()).catch(()=>{setupSuicidePreventionMonth();setupGratitudeMonth();});
   }
   setupPublicFooter();
 
