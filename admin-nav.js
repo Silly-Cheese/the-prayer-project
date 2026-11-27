@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['admin-reports.html','Reports'],
     ['admin-crisis-protocol.html','Crisis Protocol'],
     ['admin-settings.html','Settings'],
+    ['admin-campaigns.html','Announcements'],
     ['admin-audit.html','Audit Log'],
     ['status.html','Public Status'],
     ['index.html','View Site']

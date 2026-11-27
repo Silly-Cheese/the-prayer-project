@@ -4,7 +4,10 @@ document.addEventListener("DOMContentLoaded", () => {
   setupScrollAnimations();
   setupCrisisResourceReviewStamp();
   setupSuicidePreventionMonth();
-  setupGratitudeMonth();
+  if (!location.pathname.split("/").pop()?.startsWith("admin") && (document.body.classList.contains("public-page") || document.body.classList.contains("home-page"))) {
+    if (new URLSearchParams(location.search).get("gratitude")==="preview") setupGratitudeMonth();
+    else import("./campaign-public.js").then(m=>m.mountCampaigns()).then(exclusive=>{if(!exclusive)setupGratitudeMonth();}).catch(()=>setupGratitudeMonth());
+  }
   setupPublicFooter();
 
   const navLinks = document.querySelector(".nav-links");
