@@ -608,53 +608,11 @@ service cloud.firestore {
       allow delete: if isCoreAdmin() && !(campaignId in ['season-thanksgiving','season-spm']);
       allow create, update: if isCoreAdmin()
         && verifyFields(['title','summary','message','color','start','end','repeat','scope','frequency','linkLabel','link','priority','banner','feature','popup','enabled','overlap','updatedAt'], ['endedCycle','backgroundMode','colorEnd','accent','angle'])
+        && (!('endedCycle' in request.resource.data) || (request.resource.data.endedCycle is string && (request.resource.data.endedCycle == '' || request.resource.data.endedCycle.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))))
         && (!('backgroundMode' in request.resource.data) || request.resource.data.backgroundMode in ['solid','gradient'])
-        && (!('colorEnd' in request.resource.data) || (request.resource.data.colorEnd is string && request.resource.data.colorEnd.matches('^#[0-9a-fA-F]{6}
-        && (!('endedCycle' in request.resource.data) || (request.resource.data.endedCycle is string && (request.resource.data.endedCycle == '' || request.resource.data.endedCycle.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))))
-        && textBetween(request.resource.data.title,1,120)
-        && textAtMost(request.resource.data.summary,250)
-        && textBetween(request.resource.data.message,1,5000)
-        && request.resource.data.color is string
-        && request.resource.data.color.matches('^#[0-9a-fA-F]{6}$')
-        && request.resource.data.start is string && request.resource.data.start.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
-        && request.resource.data.end is string && request.resource.data.end.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
-        && request.resource.data.repeat in ['none','weekly','monthly','yearly']
-        && request.resource.data.scope in ['home','public']
-        && request.resource.data.frequency in ['once','session','always']
-        && textAtMost(request.resource.data.linkLabel,80)
-        && textAtMost(request.resource.data.link,1000)
-        && request.resource.data.priority is int && request.resource.data.priority >= 0 && request.resource.data.priority <= 1000
-        && request.resource.data.banner is bool && request.resource.data.feature is bool && request.resource.data.popup is bool
-        && (request.resource.data.banner || request.resource.data.feature || request.resource.data.popup)
-        && request.resource.data.enabled is bool && request.resource.data.overlap is bool
-        && validUpdatedAt();
-    }
-
-    )))
-        && (!('accent' in request.resource.data) || (request.resource.data.accent is string && request.resource.data.accent.matches('^#[0-9a-fA-F]{6}
-        && (!('endedCycle' in request.resource.data) || (request.resource.data.endedCycle is string && (request.resource.data.endedCycle == '' || request.resource.data.endedCycle.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))))
-        && textBetween(request.resource.data.title,1,120)
-        && textAtMost(request.resource.data.summary,250)
-        && textBetween(request.resource.data.message,1,5000)
-        && request.resource.data.color is string
-        && request.resource.data.color.matches('^#[0-9a-fA-F]{6}$')
-        && request.resource.data.start is string && request.resource.data.start.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
-        && request.resource.data.end is string && request.resource.data.end.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
-        && request.resource.data.repeat in ['none','weekly','monthly','yearly']
-        && request.resource.data.scope in ['home','public']
-        && request.resource.data.frequency in ['once','session','always']
-        && textAtMost(request.resource.data.linkLabel,80)
-        && textAtMost(request.resource.data.link,1000)
-        && request.resource.data.priority is int && request.resource.data.priority >= 0 && request.resource.data.priority <= 1000
-        && request.resource.data.banner is bool && request.resource.data.feature is bool && request.resource.data.popup is bool
-        && (request.resource.data.banner || request.resource.data.feature || request.resource.data.popup)
-        && request.resource.data.enabled is bool && request.resource.data.overlap is bool
-        && validUpdatedAt();
-    }
-
-    )))
+        && (!('colorEnd' in request.resource.data) || (request.resource.data.colorEnd is string && request.resource.data.colorEnd.matches('^#[0-9a-fA-F]{6}$')))
+        && (!('accent' in request.resource.data) || (request.resource.data.accent is string && request.resource.data.accent.matches('^#[0-9a-fA-F]{6}$')))
         && (!('angle' in request.resource.data) || request.resource.data.angle in [0,45,90,135,180,225,270,315])
-        && (!('endedCycle' in request.resource.data) || (request.resource.data.endedCycle is string && (request.resource.data.endedCycle == '' || request.resource.data.endedCycle.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))))
         && textBetween(request.resource.data.title,1,120)
         && textAtMost(request.resource.data.summary,250)
         && textBetween(request.resource.data.message,1,5000)
