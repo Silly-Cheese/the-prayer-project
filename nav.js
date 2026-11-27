@@ -3,10 +3,11 @@ document.addEventListener("DOMContentLoaded", () => {
   setupPageTransitions();
   setupScrollAnimations();
   setupCrisisResourceReviewStamp();
-  setupSuicidePreventionMonth();
   if (!location.pathname.split("/").pop()?.startsWith("admin") && (document.body.classList.contains("public-page") || document.body.classList.contains("home-page"))) {
-    if (new URLSearchParams(location.search).get("gratitude")==="preview") setupGratitudeMonth();
-    else import("./campaign-public.js").then(m=>m.mountCampaigns()).then(exclusive=>{if(!exclusive)setupGratitudeMonth();}).catch(()=>setupGratitudeMonth());
+    const params=new URLSearchParams(location.search);
+    if(params.get("gratitude")==="preview")setupGratitudeMonth();
+    else if(params.get("spm")==="preview"||params.get("spm")==="reset")setupSuicidePreventionMonth();
+    else import("./campaign-public.js?v=season-2").then(m=>m.mountCampaigns()).catch(()=>{setupSuicidePreventionMonth();setupGratitudeMonth();});
   }
   setupPublicFooter();
 

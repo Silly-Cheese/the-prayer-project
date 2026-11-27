@@ -1,11 +1,13 @@
-import {db,selected,color,ink,el,safeLink} from "./campaign-common.js";
-import {collection,getDocs,query,where} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import {db,selected,color,ink,el,safeLink,builtins,isBuiltin,seasonTitle} from "./campaign-common.js?v=season-2";
+import {collection,getDocs,query,where,doc,getDoc} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 export async function mountCampaigns(){
  const page=location.pathname.split("/").pop()||"index.html",home=page==="index.html";
  if(!home&&!document.body.classList.contains("public-page"))return false;
  if(page==="crisis.html"||page==="login.html"||page.startsWith("admin"))return false;
  const snap=await getDocs(query(collection(db,"site_campaigns"),where("enabled","==",true)));
- const rows=selected(snap.docs.map(d=>({...d.data(),id:d.id})).filter(c=>home||(c.scope==="public"&&(c.banner||c.popup))));
+ const seasonal=await Promise.all(builtins.map(async c=>{const d=await getDoc(doc(db,"site_campaigns",c.id));return d.exists()?{...d.data(),id:d.id}:c;}));
+ const all=[...snap.docs.filter(d=>!isBuiltin(d.id)).map(d=>({...d.data(),id:d.id})),...seasonal];
+ const rows=selected(all.filter(c=>home||(c.scope==="public"&&(c.banner||c.popup)))).map(c=>({...c,title:seasonTitle(c)}));
  if(!rows.length)return false;
  const style=el("style");style.textContent=`
  .managed-campaign{box-sizing:border-box;background:var(--campaign-bg);color:var(--campaign-ink);padding:18px 22px;overflow-wrap:anywhere}
@@ -19,7 +21,7 @@ export async function mountCampaigns(){
  .managed-campaign-dialog::backdrop{background:#000b}.managed-campaign-close{float:right}.managed-campaign-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
  `;document.head.append(style);
  const apply=(node,c)=>{node.style.setProperty("--campaign-bg",color(c.color));node.style.setProperty("--campaign-ink",ink(c.color));};
- const action=(node,c)=>{const href=safeLink(c.link);if(href&&c.linkLabel){const a=el("a",c.linkLabel);a.href=href;node.append(a);}};
+ const action=(node,c)=>{if(c.id==="season-spm"){for(const [label,href] of [["Call 988","tel:988"],["Text 988","sms:988"]]){const a=el("a",label);a.href=href;node.append(a);}}const href=safeLink(c.link);if(href&&c.linkLabel){const a=el("a",c.linkLabel);a.href=href;node.append(a);}};
  let bannerAnchor=document.querySelector(".nav"),featureAnchor=document.querySelector(".home-hero"),queue=[];
  for(const c of rows){
   const dialog=el("dialog",null,"managed-campaign managed-campaign-dialog");apply(dialog,c);

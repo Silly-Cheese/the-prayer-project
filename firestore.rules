@@ -603,10 +603,12 @@ service cloud.firestore {
 
     // Public seasonal campaigns; unpublished drafts are administrator-only.
     match /site_campaigns/{campaignId} {
-      allow read: if isCoreAdmin() || resource.data.enabled == true;
-      allow delete: if isCoreAdmin();
+      allow get: if isCoreAdmin() || campaignId in ['season-thanksgiving','season-spm'] || resource.data.enabled == true;
+      allow list: if isCoreAdmin() || resource.data.enabled == true;
+      allow delete: if isCoreAdmin() && !(campaignId in ['season-thanksgiving','season-spm']);
       allow create, update: if isCoreAdmin()
-        && verifyFields(['title','summary','message','color','start','end','repeat','scope','frequency','linkLabel','link','priority','banner','feature','popup','enabled','overlap','updatedAt'], [])
+        && verifyFields(['title','summary','message','color','start','end','repeat','scope','frequency','linkLabel','link','priority','banner','feature','popup','enabled','overlap','updatedAt'], ['endedCycle'])
+        && (!('endedCycle' in request.resource.data) || (request.resource.data.endedCycle is string && (request.resource.data.endedCycle == '' || request.resource.data.endedCycle.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))))
         && textBetween(request.resource.data.title,1,120)
         && textAtMost(request.resource.data.summary,250)
         && textBetween(request.resource.data.message,1,5000)
