@@ -450,5 +450,5 @@ function setupGratitudeMonth() {
   banner.querySelector("button").addEventListener("click", open);
   dialog.querySelectorAll("[data-gratitude-close]").forEach(b => b.addEventListener("click", () => dialog.close()));
   dialog.addEventListener("close", () => { if (!preview) { try { localStorage.setItem(key,"1"); } catch (_) {} } });
-  if ((home && !seen || preview) && !document.getElementById("tppSuicidePreventionModal")) open();
+  if ((home && !seen || preview) && !document.getElementById("tppSuicidePreventionModal") && !document.querySelector("dialog[open]")) open();
 }
