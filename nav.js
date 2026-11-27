@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupScrollAnimations();
   setupCrisisResourceReviewStamp();
   setupSuicidePreventionMonth();
+  setupGratitudeMonth();
   setupPublicFooter();
 
   const navLinks = document.querySelector(".nav-links");
@@ -368,4 +369,83 @@ function setupSuicidePreventionMonth() {
   modal.querySelectorAll("[data-spm-remember]").forEach(link => link.addEventListener("click", remember));
   document.addEventListener("keydown", escapeHandler);
   requestAnimationFrame(() => modal.querySelector(".tpp-spm-close")?.focus());
+}
+
+
+// November gratitude campaign — public pages only.
+function setupGratitudeMonth() {
+  const now = new Date();
+  const preview = new URLSearchParams(location.search).get("gratitude") === "preview";
+  const page = location.pathname.split("/").pop() || "index.html";
+  const home = page === "index.html";
+  if (!home && !document.body.classList.contains("public-page")) return;
+  if (page === "crisis.html" || page === "login.html" || page.startsWith("admin")) return;
+  if (!preview && now.getMonth() !== 10) return;
+  if (document.getElementById("tppGratitudeBanner")) return;
+  const thanksgiving = new Date(now.getFullYear(), 10, 1);
+  thanksgiving.setDate(1 + (4 - thanksgiving.getDay() + 7) % 7 + 21);
+  const isDay = now.getMonth() === 10 && now.getDate() === thanksgiving.getDate();
+  const isWeek = now.getMonth() === 10 && now.getDate() >= thanksgiving.getDate() - 3 && now.getDate() <= thanksgiving.getDate() + 3;
+  const greeting = isDay ? "Happy Thanksgiving!" : isWeek ? "Happy Thanksgiving Week!" : "November — A Month of Gratitude";
+  const prompts = [
+    "Thank someone who has quietly stood beside you.",
+    "Remember a small kindness you received recently.",
+    "Thank God for a person who has encouraged you.",
+    "Take a moment to appreciate something you usually overlook.",
+    "Offer a prayer of thanks for a blessing, however small.",
+    "Share a kind word with someone who may need it.",
+    "Remember a moment of hope that helped you keep going."
+  ];
+  const prompt = prompts[(now.getDate() - 1) % prompts.length];
+  const css = document.createElement("style");
+  css.textContent = `
+    .tpp-gratitude{box-sizing:border-box;color:#f9ead5;background:radial-gradient(ellipse at top right,#57351f 0,transparent 55%),linear-gradient(115deg,#21140e,#382116 65%,#21140e);border-block:1px solid #865735}
+    .tpp-gratitude-inner{width:min(1160px,calc(100% - 40px));margin:auto;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 0}
+    .tpp-gratitude strong{color:#ffe3ad}.tpp-gratitude small{display:block;color:#ebcba8;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:800}
+    .tpp-gratitude button,.tpp-gratitude a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;border-radius:999px;background:#f4d29b;color:#2c190e;border:1px solid #f4d29b;font:inherit;font-size:14px;font-weight:800;text-decoration:none;cursor:pointer}
+    .tpp-gratitude :focus-visible{outline:3px solid #fff;outline-offset:4px}
+    .tpp-gratitude-feature{padding:clamp(30px,6vw,76px) 0}
+    .tpp-gratitude-feature .tpp-gratitude-inner{display:grid;grid-template-columns:1.4fr 1fr;gap:clamp(20px,5vw,60px)}
+    .tpp-gratitude h2{font-family:"Playfair Display",Georgia,serif;font-size:clamp(36px,6vw,72px);line-height:1.06;letter-spacing:-.035em;margin:12px 0 18px;color:#fff3df}
+    .tpp-gratitude p{color:#f0d9c0;line-height:1.75;margin:0 0 16px}
+    .tpp-gratitude-reflection{padding:24px;border:1px solid #9b714c;border-radius:20px;background:#21140e;color:#f9ead5}
+    .tpp-gratitude-reflection blockquote{font:600 24px/1.4 Georgia,serif;margin:12px 0;color:#ffe3ad}
+    .tpp-gratitude-dialog{box-sizing:border-box;width:min(760px,calc(100% - 28px));max-height:calc(100% - 28px);overflow:auto;border:1px solid #9b714c;border-radius:24px;padding:clamp(24px,5vw,48px);box-shadow:0 24px 100px #0009}
+    .tpp-gratitude-dialog::backdrop{background:#000b}
+    .tpp-gratitude-dialog .tpp-gratitude-close{float:right;min-width:44px;padding:8px;font-size:22px}
+    .tpp-gratitude-dialog h2{font-size:clamp(36px,6vw,60px)}
+    .tpp-gratitude-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+    @media(max-width:700px){.tpp-gratitude-feature .tpp-gratitude-inner{grid-template-columns:1fr}.tpp-gratitude-inner{flex-wrap:wrap}}
+  `;
+  document.head.appendChild(css);
+  const banner = document.createElement("section");
+  banner.id = "tppGratitudeBanner";
+  banner.className = "tpp-gratitude";
+  banner.setAttribute("aria-label","November gratitude campaign");
+  banner.innerHTML = `<div class="tpp-gratitude-inner"><div><small>November • The Prayer Project</small><strong>${greeting}</strong> — Give thanks. Show kindness. Appreciate the little things.</div><button type="button" data-gratitude-open>Read our Thanksgiving message</button></div>`;
+  document.querySelector(".nav")?.after(banner);
+  if (!banner.isConnected) document.body.prepend(banner);
+  const message = `<p>In a world where we are constantly reminded of what we do not have, may we never forget to appreciate what we already do.</p><p>This November, remember the people who have stood beside you, the opportunities you have received, the memories you have made, and the quiet blessings that often go unnoticed.</p><p>Thankfulness does not mean pretending life is easy. If this season is difficult, you are welcome here exactly as you are. Even a small moment of comfort or kindness can be worth remembering.</p><p>May gratitude extend beyond Thanksgiving Day and become something we carry with us every day.</p>`;
+  const reflection = `<aside class="tpp-gratitude-reflection"><small>Scripture for the season</small><blockquote>In every thing give thanks.</blockquote><p>1 Thessalonians 5:18 (KJV)</p><small>Today's gratitude challenge</small><p>${prompt}</p></aside>`;
+  if (home) {
+    const feature = document.createElement("section");
+    feature.className = "tpp-gratitude tpp-gratitude-feature";
+    feature.id = "tppGratitudeFeature";
+    feature.innerHTML = `<div class="tpp-gratitude-inner"><div><small>A season of thanksgiving • November</small><h2>Remain thankful.</h2>${message}<div class="tpp-gratitude-actions"><a href="#submit">Ask for prayer</a><a href="#wall">Pray for someone</a></div></div>${reflection}</div>`;
+    const hero = document.querySelector(".home-hero");
+    if (hero) hero.after(feature); else document.querySelector("main")?.prepend(feature);
+  }
+  const dialog = document.createElement("dialog");
+  dialog.className = "tpp-gratitude tpp-gratitude-dialog";
+  dialog.setAttribute("aria-labelledby","tppGratitudeTitle");
+  dialog.innerHTML = `<button class="tpp-gratitude-close" type="button" data-gratitude-close aria-label="Close Thanksgiving message">×</button><small>The Prayer Project • A Month of Gratitude</small><h2 id="tppGratitudeTitle">${greeting}</h2>${message}${reflection}<div class="tpp-gratitude-actions"><button type="button" data-gratitude-close>Continue to website</button><a href="index.html#submit">Request prayer</a></div>`;
+  document.body.appendChild(dialog);
+  const key = "tpp-gratitude-seen-" + now.getFullYear();
+  let seen = false;
+  try { seen = localStorage.getItem(key) === "1"; } catch (_) {}
+  const open = () => { if (!dialog.open && typeof dialog.showModal === "function") dialog.showModal(); };
+  banner.querySelector("button").addEventListener("click", open);
+  dialog.querySelectorAll("[data-gratitude-close]").forEach(b => b.addEventListener("click", () => dialog.close()));
+  dialog.addEventListener("close", () => { if (!preview) { try { localStorage.setItem(key,"1"); } catch (_) {} } });
+  if ((home && !seen || preview) && !document.getElementById("tppSuicidePreventionModal")) open();
 }
